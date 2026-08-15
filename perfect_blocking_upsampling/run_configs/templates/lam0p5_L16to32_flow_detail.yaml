@@ -1,0 +1,45 @@
+lambda: 0.5
+kappa_f: 0.343469
+kappa_c: 0.343469
+eta: 0.25
+eta_scale: 2^0.125
+eta_scale_numeric: 1.0905077326652577
+L_f: 32
+L_c: 16
+block_factor: 2
+
+fine_config_source: data/configs_phi4_2d/lam0p5_kappac0p343469_L32/configs.npz
+coarse_config_source: data/configs_phi4_2d/lam0p5_kappac0p343469_L16/configs.npz
+kernel_path: perfect_blocking/perfect_blocking_lam0p5/kernels/final/chosen_kernel.json
+kernel_coefficients_include_eta_scale: true
+
+mode: flow_detail_coarse_detail
+legacy_runner: null
+legacy_extend_runner: null
+
+patch:
+  detail_patch_size: 16
+  coarse_patch_size: 16
+  detail_passes: 20
+  coarse_passes: 1
+  random_origin: true
+
+random_seed: 1234
+n_chains: 500
+n_sweeps: 50
+checkpoint_every: 10
+measure_every: 1
+save_every: 10
+
+resume:
+  enabled: false
+  checkpoint_path: null
+
+observables:
+  write_all_observables_per_config: true
+  write_Gk_per_config: true
+  gk_momenta:
+    - [0, 0]
+    - [1, 0]
+    - [0, 1]
+

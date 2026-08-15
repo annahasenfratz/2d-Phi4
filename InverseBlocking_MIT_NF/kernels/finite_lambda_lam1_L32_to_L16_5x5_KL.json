@@ -1,0 +1,43 @@
+{
+  "name": "finite_lambda_lam1_L32_to_L16_5x5_KL",
+  "eps": 1e-08,
+  "normalization": "Only the unit-sum normalization is fixed exactly. Listed shell weights are approximate working values; the dependent corner/diagonal shell is adjusted to make the stencil sum exactly 1.",
+  "provenance": {
+    "lambda": "1.0",
+    "kappa": "approximately 0.3401 / near-critical",
+    "eta": "1/4",
+    "N_eta": "2^(1/8)",
+    "source": "Finite lambda blocking chat recovered context",
+    "weights_parameterization": "w00\u22480.787, w10\u22480.027, w11\u22480.014, w20\u22480.014, w21\u22480.0024, w22\u2248-0.00655",
+    "precision_policy": "Do not treat digits as statistically significant; these are starting values, not quoted fit errors."
+  },
+  "weights": {
+    "-2,-2": -0.006550000000000008,
+    "-2,-1": 0.0024,
+    "-2,0": 0.014,
+    "-2,1": 0.0024,
+    "-2,2": -0.006550000000000008,
+    "-1,-2": 0.0024,
+    "-1,-1": 0.014,
+    "-1,0": 0.027,
+    "-1,1": 0.014,
+    "-1,2": 0.0024,
+    "0,-2": 0.014,
+    "0,-1": 0.027,
+    "0,0": 0.787,
+    "0,1": 0.027,
+    "0,2": 0.014,
+    "1,-2": 0.0024,
+    "1,-1": 0.014,
+    "1,0": 0.027,
+    "1,1": 0.014,
+    "1,2": 0.0024,
+    "2,-2": -0.006550000000000008,
+    "2,-1": 0.0024,
+    "2,0": 0.014,
+    "2,1": 0.0024,
+    "2,2": -0.006550000000000008
+  },
+  "sum_weights": 1.0,
+  "notes": "Preferred 5x5 KL-optimized kernel shape from finite-lambda L32->L16 comparison. Values are rounded working estimates; w22 is computed from exact unit normalization."
+}

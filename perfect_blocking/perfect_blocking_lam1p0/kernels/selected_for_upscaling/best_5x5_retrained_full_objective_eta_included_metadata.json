@@ -1,0 +1,10 @@
+{
+  "base_kernel_sum_before_eta_scale": 1.0,
+  "candidate_json": "perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/systematic_training/best_retrained_5x5_full_objective_eta_included.json",
+  "candidate_scores": "perfect_blocking/perfect_blocking_lam1p0/tests/intermediate/systematic_kernel_training/5x5_full_objective/candidate_scores.csv",
+  "candidate_txt": "perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/systematic_training/best_retrained_5x5_full_objective_eta_included.txt",
+  "final_kernel_sum_after_eta_scale": 1.0905077326652577,
+  "guardrails": "action KS<=0.035, action JS<=0.005, m2/m4 KS<=0.025, Gpmin KS<=0.035, max_invK<=1.6",
+  "selection": "best acceptable 5x5 refinement under mature guardrails",
+  "source_candidate": "5x5_refine_rand_0442"
+}

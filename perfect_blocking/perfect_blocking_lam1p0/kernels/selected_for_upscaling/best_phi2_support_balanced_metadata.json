@@ -1,0 +1,29 @@
+{
+  "name": "best_phi2_support_balanced",
+  "status": "production",
+  "date_selected_utc": "20260718T192614Z",
+  "selected_kernel_path": "perfect_blocking/perfect_blocking_lam1p0/kernels/selected_for_upscaling/best_phi2_support_balanced_eta_included.json",
+  "final_kernel_path": "perfect_blocking/perfect_blocking_lam1p0/kernels/final/chosen_kernel.json",
+  "source_candidate_path": "perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/redo_phi2_support_balanced_2000/best_phi2_support_balanced_eta_included.json",
+  "sha256": "84013adc2235f9f89a12bc835c2f1cbe6185f1d50d5b1b86dc05d649990baace",
+  "lambda": 1.0,
+  "kappa_cr": 0.340301,
+  "kappa_f": 0.340301,
+  "kappa_c": 0.340301,
+  "eta": 0.25,
+  "block_factor": 2,
+  "eta_scale": 1.0905077326652577,
+  "kernel_coefficients_include_eta_scale": true,
+  "sum_K": 1.0905077326652577,
+  "family": "support_balanced_5x5",
+  "momentum_stability": {
+    "min_Kp": 0.7073660206381788,
+    "max_Kp": 1.0934526085021135,
+    "min_inv_Kp": 0.9145343769126572,
+    "max_inv_Kp": 1.413695273484878,
+    "condition": 1.5458087844191486
+  },
+  "confirmation_direct_L16_vs_blocked_L32_to_L16": "perfect_blocking/perfect_blocking_lam1p0/tests/final/final_confirm_phi2_support_balanced_kernel_full/",
+  "confirmation_direct_L32_vs_blocked_L64_to_L32": "perfect_blocking/perfect_blocking_lam1p0/tests/final/final_confirm_phi2_support_balanced_kernel_L64_to_L32/",
+  "rationale": "Promoted because it substantially improves phi2 and local-kurtosis coarse-marginal support versus the previous selected 7x7 while preserving NN, G_pmin_avg, eta convention, and momentum stability. A modest phi4/action tradeoff is accepted as preferable to missing support."
+}

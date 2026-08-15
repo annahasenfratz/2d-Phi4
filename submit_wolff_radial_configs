@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Generate native/direct coarse configurations with the canonical finite-lambda
+# embedded Wolff sign-cluster + radial heatbath generator.
+#
+# The default output path is the canonical shared phi4 2d config store.
+# Old workflow directories may keep symlinks into this directory for now.
+#
+# Edit parameters below, then launch:
+#   ./submit_wolff_radial_configs
+#
+
+###############################################################################
+# Edit parameters here. Do not pass inline environment variables.
+###############################################################################
+
+L="${L:-64}"                         # generated lattice size; use L=8 for 8->16 coarse configs
+LAMBDA="${LAMBDA:-1.0}"
+KAPPA="${KAPPA:-0.340301}"
+
+N_CONFIGS="${N_CONFIGS:-5000}"
+THERMAL_SWEEPS="${THERMAL_SWEEPS:-0}"
+SKIP_SWEEPS="${SKIP_SWEEPS:-15}"
+CLUSTERS_PER_SWEEP="${CLUSTERS_PER_SWEEP:-1}"
+SEED="${SEED:-20263344}"
+
+# Canonical location for generated phi4 2d configurations.
+CONFIG_ENSEMBLE_ROOT="${CONFIG_ENSEMBLE_ROOT:-data/configs_phi4_2d}"
+
+# Internal alias used below; this script now writes only to CONFIG_ENSEMBLE_ROOT.
+COARSE_ENSEMBLE_ROOT="$CONFIG_ENSEMBLE_ROOT"
+
+# Leave RUN_NAME blank for the conventional name:
+#   lam0p2_kappac<KAPPA6>_L<L>
+#
+# The configuration count belongs in the ensemble manifest, not in the
+# directory name.
+RUN_NAME="${RUN_NAME:-}"
+APPEND_EXISTING="1"
+# APPEND_EXISTING="${APPEND_EXISTING:-auto}"        # auto appends when RUN_DIR/configs.npz exists; 1 forces append; 0 forces a fresh directory
+ALLOW_EXISTING="${ALLOW_EXISTING:-0}"             # 0 refuses to write into a nonempty directory
+RUN_IN_NOHUP="${RUN_IN_NOHUP:-1}"                 # 1 launches detached with nohup; 0 runs in foreground
+DRY_RUN="${DRY_RUN:-0}"
+
+###############################################################################
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+GENERATOR="phi4_phase-diagram/src/generate_phi4_embedded_wolff_radial_heatbath.py"
+
+tag_float() {
+  local x="$1"
+  x="${x/-/m}"
+  x="${x//./p}"
+  echo "$x"
+}
+
+if [[ -x "../../.venv/bin/python" ]]; then
+  PYTHON="../../.venv/bin/python"
+elif [[ -x ".venv/bin/python" ]]; then
+  PYTHON=".venv/bin/python"
+else
+  echo "ERROR: could not find ../../.venv/bin/python or .venv/bin/python" >&2
+  exit 2
+fi
+
+if [[ ! -f "$GENERATOR" ]]; then
+  echo "ERROR: missing Wolff/radial generator: $GENERATOR" >&2
+  exit 2
+fi
+
+lam_tag="$(tag_float "$LAMBDA")"
+kappa_tag="$(tag_float "$(printf '%.6f' "$KAPPA")")"
+kappa_tag4="$(tag_float "$(printf '%.4f' "$KAPPA")")"
+
+if [[ -z "$RUN_NAME" ]]; then
+  RUN_NAME="lam${lam_tag}_kappac${kappa_tag}_L${L}"
+fi
+
+RUN_DIR="$COARSE_ENSEMBLE_ROOT/$RUN_NAME"
+LOG_DIR="$COARSE_ENSEMBLE_ROOT/logs"
+mkdir -p "$LOG_DIR"
+
+if [[ "$APPEND_EXISTING" == "auto" ]]; then
+  if [[ -f "$RUN_DIR/configs.npz" ]]; then
+    APPEND_EXISTING="1"
+  else
+    APPEND_EXISTING="0"
+  fi
+fi
+
+if [[ -d "$RUN_DIR" ]] && [[ -n "$(find "$RUN_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]] && [[ "$ALLOW_EXISTING" != "1" ]] && [[ "$APPEND_EXISTING" != "1" ]] && [[ "$DRY_RUN" != "1" ]]; then
+  cat >&2 <<EOF
+ERROR: refusing to write into nonempty output directory:
+  $RUN_DIR
+
+Set ALLOW_EXISTING="1" only if you intentionally want to let the generator
+reuse/overwrite files in that directory.
+Set APPEND_EXISTING="1" to continue from RUN_DIR/configs.npz and append
+new configurations.
+EOF
+  exit 2
+fi
+
+if [[ "$DRY_RUN" != "1" ]]; then
+  mkdir -p "$RUN_DIR"
+fi
+
+LOG_BASENAME="generate_wolff_radial_L${L}_kappa${kappa_tag}_N${N_CONFIGS}"
+LOG="$LOG_DIR/${LOG_BASENAME}.log"
+NOHUP_LOG="$LOG_DIR/${LOG_BASENAME}.nohup.log"
+PID_FILE="$LOG_DIR/${LOG_BASENAME}.pid"
+MANIFEST="$RUN_DIR/submit_wolff_radial_configs_manifest.txt"
+
+cmd=(
+  "$PYTHON" -u -B "$GENERATOR"
+  --lambda "$LAMBDA"
+  --kappa "$KAPPA"
+  --L "$L"
+  --n-configs "$N_CONFIGS"
+  --thermal-sweeps "$THERMAL_SWEEPS"
+  --skip-sweeps "$SKIP_SWEEPS"
+  --clusters-per-sweep "$CLUSTERS_PER_SWEEP"
+  --seed "$SEED"
+  --output-dir "$RUN_DIR"
+)
+if [[ "$APPEND_EXISTING" == "1" ]]; then
+  cmd+=(--append-existing)
+fi
+printf -v CMD_QUOTED '%q ' "${cmd[@]}"
+printf -v LOG_QUOTED '%q' "$LOG"
+
+if [[ "$DRY_RUN" != "1" ]]; then
+  {
+    echo "submitted_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    echo "root: $ROOT"
+    echo "generator: $GENERATOR"
+    echo "python: $PYTHON"
+    echo "lambda: $LAMBDA"
+    echo "kappa: $KAPPA"
+    echo "kappa_tag_full: $kappa_tag"
+    echo "kappa_tag_4dec: $kappa_tag4"
+    echo "L: $L"
+    echo "n_configs: $N_CONFIGS"
+    echo "thermal_sweeps: $THERMAL_SWEEPS"
+    echo "skip_sweeps: $SKIP_SWEEPS"
+    echo "clusters_per_sweep: $CLUSTERS_PER_SWEEP"
+    echo "seed: $SEED"
+    echo "append_existing: $APPEND_EXISTING"
+    echo "output_dir: $RUN_DIR"
+    echo "configs_path: $RUN_DIR/configs.npz"
+    echo "streaming_configs_path: $RUN_DIR/configs_streaming.npy"
+    echo "streaming_status_path: $RUN_DIR/streaming_status.json"
+    echo "generation_log_path: $RUN_DIR/generation_log.csv"
+    echo "directory_naming_convention: lam0p2_kappac<kappa6>_L<L>; n_configs is stored in this manifest, not in the directory name"
+    echo "log: $LOG"
+    echo "nohup_log: $NOHUP_LOG"
+    echo "pid_file: $PID_FILE"
+    echo "command: $CMD_QUOTED"
+  } > "$MANIFEST"
+fi
+
+echo "Wolff/radial config generation"
+echo "  output: $RUN_DIR"
+echo "  configs: $RUN_DIR/configs.npz"
+echo "  streaming configs: $RUN_DIR/configs_streaming.npy"
+echo "  streaming status: $RUN_DIR/streaming_status.json"
+echo "  generation log: $RUN_DIR/generation_log.csv"
+echo "  append existing: $APPEND_EXISTING"
+echo "  log: $LOG"
+echo "  manifest: $MANIFEST"
+echo "  command: $CMD_QUOTED"
+
+if [[ "$DRY_RUN" == "1" ]]; then
+  echo "[dry-run] not launching"
+  exit 0
+fi
+
+if [[ "$RUN_IN_NOHUP" == "1" ]]; then
+  nohup bash -lc "set -euo pipefail; export PYTHONUNBUFFERED=1; $CMD_QUOTED 2>&1 | tee $LOG_QUOTED" > "$NOHUP_LOG" 2>&1 &
+  pid=$!
+  echo "$pid" > "$PID_FILE"
+  echo "Started detached Wolff/radial generation:"
+  echo "  pid: $pid"
+  echo "  nohup log: $NOHUP_LOG"
+  echo "  live log: $LOG"
+else
+  PYTHONUNBUFFERED=1 "${cmd[@]}" 2>&1 | tee "$LOG"
+fi

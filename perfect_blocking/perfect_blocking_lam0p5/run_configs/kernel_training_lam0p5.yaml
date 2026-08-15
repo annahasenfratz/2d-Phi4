@@ -1,0 +1,58 @@
+lambda: 0.5
+kappa_f: 0.343469
+kappa_c: 0.343469
+eta: 0.25
+eta_scale: 2^0.125
+block_factor: 2
+kernel_family: 5x5
+fine_L: 32
+coarse_L: 16
+smaller_coarse_L: 8
+
+fine_config_source: data/configs_phi4_2d/lam0p5_kappac0p343469_L32/configs.npz
+coarse_config_source: data/configs_phi4_2d/lam0p5_kappac0p343469_L16/configs.npz
+smaller_coarse_config_source: data/configs_phi4_2d/lam0p5_kappac0p343469_L8/configs.npz
+generated_config_root: data/configs_phi4_2d/generated
+blocked_config_root: data/configs_phi4_2d/blocked
+
+kernel: perfect_blocking/perfect_blocking_lam0p5/kernels/final/chosen_kernel.json
+candidate_output_dir: perfect_blocking/perfect_blocking_lam0p5/kernels/candidates
+
+native_fine_observable_csv: perfect_blocking/perfect_blocking_lam0p5/observables/native/native_L32_all_observables_per_config.csv
+direct_observable_csv: perfect_blocking/perfect_blocking_lam0p5/observables/native/direct_L16_all_observables_per_config.csv
+blocked_observable_csv: perfect_blocking/perfect_blocking_lam0p5/observables/blocked/native_L32_blocked_to_L16_observables_per_config.csv
+comparison_csv: perfect_blocking/perfect_blocking_lam0p5/observables/comparisons/histogram_quantification_direct_L16_vs_native_L32_blockedtoL16.csv
+native_fine_gk_csv: perfect_blocking/perfect_blocking_lam0p5/observables/native/native_L32_Gk_per_config.csv
+native_fine_gk_summary_csv: perfect_blocking/perfect_blocking_lam0p5/observables/native/native_L32_Gk_summary_per_config.csv
+direct_gk_csv: perfect_blocking/perfect_blocking_lam0p5/observables/native/direct_L16_Gk_per_config.csv
+direct_gk_summary_csv: perfect_blocking/perfect_blocking_lam0p5/observables/native/direct_L16_Gk_summary_per_config.csv
+blocked_gk_csv: perfect_blocking/perfect_blocking_lam0p5/observables/blocked/native_L32_blocked_to_L16_Gk_per_config.csv
+blocked_gk_summary_csv: perfect_blocking/perfect_blocking_lam0p5/observables/blocked/native_L32_blocked_to_L16_Gk_summary_per_config.csv
+gk_comparison_csv: perfect_blocking/perfect_blocking_lam0p5/observables/comparisons/histogram_quantification_direct_L16_vs_native_L32_blockedtoL16_Gk.csv
+plot_dir: perfect_blocking/perfect_blocking_lam0p5/plots
+
+observables:
+  - phi2
+  - phi4
+  - local_kurtosis_ratio
+  - NN
+  - 2nn
+  - diag
+  - action_density
+  - m
+  - m2
+  - m4
+  - Binder_U4_from_averages
+  - xi_over_L
+
+histogram_bins: 50
+gk_momenta:
+  - [0, 0]
+  - [1, 0]
+  - [0, 1]
+gk_comparison_observables:
+  - G_00
+  - G_10
+  - G_01
+  - G_pmin_avg
+save_blocked_configs_default: false

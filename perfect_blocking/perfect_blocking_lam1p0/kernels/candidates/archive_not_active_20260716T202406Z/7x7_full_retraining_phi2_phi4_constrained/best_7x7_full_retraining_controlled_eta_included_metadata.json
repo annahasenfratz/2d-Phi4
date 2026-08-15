@@ -1,0 +1,13 @@
+{
+  "K33_policy": "no33 in stages 1-2; stage 3 full33 only if no33 failed to beat current final",
+  "base_kernel_sum_before_eta_scale": 1.0,
+  "baseline": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/final/chosen_kernel.json",
+  "candidate_json": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_full_retraining_phi2_phi4_constrained/best_7x7_full_retraining_controlled_eta_included.json",
+  "candidate_txt": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_full_retraining_phi2_phi4_constrained/best_7x7_full_retraining_controlled_eta_included.txt",
+  "center": 9,
+  "final_kernel_sum_after_eta_scale": 1.090507732665258,
+  "scale": 0.0008,
+  "selection": "best staged controlled from-scratch 7x7 candidate with phi2 and phi4 protected as hard guardrails",
+  "source_candidate": "stage2_no33_center09_011",
+  "stage": 2
+}

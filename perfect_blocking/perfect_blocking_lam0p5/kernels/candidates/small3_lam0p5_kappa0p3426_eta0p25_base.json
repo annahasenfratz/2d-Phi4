@@ -1,0 +1,20 @@
+{
+  "eta": 0.25,
+  "fit_summary": {
+    "baseline_objective": 2204.3824684948713,
+    "condition_number_abs": 2.454556472991412,
+    "max_abs_z_primary": 20.725756565237944,
+    "objective": 1643.718507239691
+  },
+  "kappa": 0.3426,
+  "lambda": 0.5,
+  "name": "small3_lam0p5_kappa0p3426_eta0p25",
+  "normalization": "sum_to_one",
+  "orbits": {
+    "00": 0.7688950570378823,
+    "10": 0.07407430267935117,
+    "11": -0.016298066938821736
+  },
+  "scale_factor": 2,
+  "type": "orbit_kernel"
+}

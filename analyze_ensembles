@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+  echo "usage: sh analyze_ensembles <ensemble-name-or-path> [extra summarize args...]" >&2
+  exit 2
+fi
+
+name="$1"
+shift
+
+coarse_root="data/configs_phi4_2d/"
+diag_root="perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/coarse_source_overlap_diagnostic"
+
+if [[ -e "$name" ]]; then
+  configs="$name"
+elif [[ -e "$coarse_root/$name/configs.npz" || -d "$coarse_root/$name" ]]; then
+  configs="$coarse_root/$name"
+elif [[ -e "$diag_root/$name/configs.npz" || -d "$diag_root/$name" ]]; then
+  configs="$diag_root/$name"
+else
+  cat >&2 <<EOF
+ERROR: could not find ensemble:
+  $name
+
+Tried:
+  $name
+  $coarse_root/$name
+  $diag_root/$name
+EOF
+  exit 2
+fi
+
+label="$(basename "$configs")"
+label="${label%.csv}"
+
+../../.venv/bin/python -B perfect_blocking_upsampling/scripts/summarize_config_ensemble_observables.py \
+  "$configs" \
+  --label "$label" \
+  --nboot 2000 \
+  "$@"

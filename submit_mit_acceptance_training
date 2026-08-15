@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# MIT-acceptance/reverse-KL training for the L8->L16 inverse-blocking flow.
+# This is separate from reconstruction-trained AR flow and detail-update runs.
+
+###############################################################################
+# Edit parameters here.
+###############################################################################
+
+MODE="train"                      # preflight | train
+INIT_MODE="current_best"          # current_best | identity
+VARIANT="RKL_only"                # RKL_only | RKL_plus_logw_variance
+LOGW_VAR_ALPHA="0.0"              # used only for RKL_plus_logw_variance
+
+KAPPA_C="0.323124"
+KAPPA_F="0.323124"
+
+EPOCHS="50"
+STEPS_PER_EPOCH="100"
+BATCH_SIZE="128"
+LR="1e-5"
+SEED="2026071031"
+DEVICE="cpu"
+
+VALIDATION_CONFIGS="256"
+NATIVE_VALIDATION_CONFIGS="256"
+INDEPENDENCE_PROPOSALS="256"
+VALIDATION_EVERY="5"
+
+COARSE_ENSEMBLE="perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/L16to32_exact_direct_L16_kappac_scan/coarse_ensembles/lam0p2_kappac0p323124_L8_N5000/configs.npz"
+NATIVE_REFERENCE="perfect_blocking_upsampling/outputs/lam0p2_kappa0p323124/native/L16/configs.npz"
+KERNEL_PATH="perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/rand5x5_0084_repro_workflow/rand5x5_0084_kernel.json"
+INITIAL_CHECKPOINT="perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/rand5x5_0084_repro_workflow/production/width0p003_tail0p003/autoregressive_checkpoint.pt"
+BASELINE_CHECKPOINT="perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/rand5x5_0084_residual_flow_pilot/checkpoints/checkpoint_best_residual_flow.pt"
+
+OUT_ROOT="perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/mit_acceptance_trained_inverse_blocking_L8to16"
+RUN_NAME=""
+RUN_IN_NOHUP="1"
+DRY_RUN="${DRY_RUN:-0}"
+
+###############################################################################
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+tag_float() {
+  local x="$1"
+  x="${x/-/m}"
+  x="${x//./p}"
+  echo "$x"
+}
+
+if [[ -x "../../.venv/bin/python" ]]; then
+  PYTHON="../../.venv/bin/python"
+elif [[ -x ".venv/bin/python" ]]; then
+  PYTHON=".venv/bin/python"
+else
+  echo "ERROR: could not find ../../.venv/bin/python or .venv/bin/python" >&2
+  exit 2
+fi
+
+for path in "$COARSE_ENSEMBLE" "$NATIVE_REFERENCE" "$KERNEL_PATH" "$INITIAL_CHECKPOINT" "$BASELINE_CHECKPOINT"; do
+  if [[ ! -e "$path" ]]; then
+    echo "ERROR: missing required path: $path" >&2
+    exit 2
+  fi
+done
+
+if [[ -z "$RUN_NAME" ]]; then
+  kc_tag="$(tag_float "$KAPPA_C")"
+  kf_tag="$(tag_float "$KAPPA_F")"
+  alpha_tag="$(tag_float "$LOGW_VAR_ALPHA")"
+  RUN_NAME="${MODE}_${INIT_MODE}_${VARIANT}_a${alpha_tag}_kc${kc_tag}_kf${kf_tag}_$(date +%Y%m%d_%H%M%S)"
+fi
+
+OUT_DIR="$OUT_ROOT/$RUN_NAME"
+LOG_DIR="$OUT_DIR/logs"
+mkdir -p "$LOG_DIR"
+LOG="$LOG_DIR/mit_acceptance_training.log"
+NOHUP_LOG="$LOG_DIR/mit_acceptance_training.nohup.log"
+PID_FILE="$LOG_DIR/mit_acceptance_training.pid"
+
+cmd=(
+  "$PYTHON" -u -B perfect_blocking_upsampling/scripts/train_lam0p2_mit_acceptance_flow_L8to16.py
+  --mode "$MODE"
+  --out-dir "$OUT_DIR"
+  --coarse-ensemble "$COARSE_ENSEMBLE"
+  --native-reference "$NATIVE_REFERENCE"
+  --kernel-path "$KERNEL_PATH"
+  --initial-checkpoint "$INITIAL_CHECKPOINT"
+  --baseline-checkpoint "$BASELINE_CHECKPOINT"
+  --kappa-c "$KAPPA_C"
+  --kappa-f "$KAPPA_F"
+  --init-mode "$INIT_MODE"
+  --variant "$VARIANT"
+  --logw-var-alpha "$LOGW_VAR_ALPHA"
+  --epochs "$EPOCHS"
+  --steps-per-epoch "$STEPS_PER_EPOCH"
+  --batch-size "$BATCH_SIZE"
+  --lr "$LR"
+  --seed "$SEED"
+  --device "$DEVICE"
+  --validation-configs "$VALIDATION_CONFIGS"
+  --native-validation-configs "$NATIVE_VALIDATION_CONFIGS"
+  --independence-proposals "$INDEPENDENCE_PROPOSALS"
+  --validation-every "$VALIDATION_EVERY"
+)
+
+printf -v CMD_QUOTED '%q ' "${cmd[@]}"
+printf -v LOG_QUOTED '%q' "$LOG"
+
+cat <<EOF
+MIT-acceptance-trained inverse-blocking flow
+  MODE=$MODE
+  INIT_MODE=$INIT_MODE VARIANT=$VARIANT LOGW_VAR_ALPHA=$LOGW_VAR_ALPHA
+  KAPPA_C=$KAPPA_C KAPPA_F=$KAPPA_F
+  EPOCHS=$EPOCHS STEPS_PER_EPOCH=$STEPS_PER_EPOCH BATCH_SIZE=$BATCH_SIZE LR=$LR
+  OUT_DIR=$OUT_DIR
+  LOG=$LOG
+  command: $CMD_QUOTED
+EOF
+
+if [[ "$DRY_RUN" == "1" ]]; then
+  echo "[dry-run] not launching"
+  exit 0
+fi
+
+{
+  echo "submitted_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "root: $ROOT"
+  echo "mode: $MODE"
+  echo "init_mode: $INIT_MODE"
+  echo "variant: $VARIANT"
+  echo "logw_var_alpha: $LOGW_VAR_ALPHA"
+  echo "kappa_c: $KAPPA_C"
+  echo "kappa_f: $KAPPA_F"
+  echo "coarse_ensemble: $COARSE_ENSEMBLE"
+  echo "native_reference: $NATIVE_REFERENCE"
+  echo "kernel_path: $KERNEL_PATH"
+  echo "initial_checkpoint: $INITIAL_CHECKPOINT"
+  echo "baseline_checkpoint: $BASELINE_CHECKPOINT"
+  echo "out_dir: $OUT_DIR"
+  echo "log: $LOG"
+  echo "command: $CMD_QUOTED"
+} > "$OUT_DIR/submit_manifest.txt"
+
+if [[ "$RUN_IN_NOHUP" == "1" ]]; then
+  export MIT_ACCEPTANCE_CMD_JSON
+  export MIT_ACCEPTANCE_LOG
+  export MIT_ACCEPTANCE_NOHUP_LOG
+  MIT_ACCEPTANCE_CMD_JSON="$("$PYTHON" -c 'import json,sys; print(json.dumps(sys.argv[1:]))' "${cmd[@]}")"
+  MIT_ACCEPTANCE_LOG="$LOG"
+  MIT_ACCEPTANCE_NOHUP_LOG="$NOHUP_LOG"
+  pid="$("$PYTHON" - <<'PY'
+import json
+import os
+import subprocess
+from pathlib import Path
+
+cmd = json.loads(os.environ["MIT_ACCEPTANCE_CMD_JSON"])
+log_path = Path(os.environ["MIT_ACCEPTANCE_LOG"])
+nohup_path = Path(os.environ["MIT_ACCEPTANCE_NOHUP_LOG"])
+log_path.parent.mkdir(parents=True, exist_ok=True)
+env = os.environ.copy()
+env["PYTHONUNBUFFERED"] = "1"
+with log_path.open("ab", buffering=0) as log, nohup_path.open("ab", buffering=0) as nohup:
+    proc = subprocess.Popen(
+        cmd,
+        stdout=log,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
+        cwd=os.getcwd(),
+        env=env,
+        start_new_session=True,
+    )
+    nohup.write(f"pid: {proc.pid}\nlog: {log_path}\n".encode())
+    print(proc.pid)
+PY
+)"
+  echo "$pid" > "$PID_FILE"
+  echo "Started detached MIT-acceptance training:"
+  echo "  PID=$pid"
+  echo "  LOG=$LOG"
+  echo "  NOHUP_LOG=$NOHUP_LOG"
+else
+  PYTHONUNBUFFERED=1 "${cmd[@]}" 2>&1 | tee "$LOG"
+fi

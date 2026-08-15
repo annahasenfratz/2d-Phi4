@@ -1,0 +1,9 @@
+{
+  "base_kernel_sum_before_eta_scale": 1.0,
+  "candidate_json": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_from_retrained_5x5/best_7x7_from_retrained_5x5_eta_included.json",
+  "candidate_txt": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_from_retrained_5x5/best_7x7_from_retrained_5x5_eta_included.txt",
+  "final_kernel_sum_after_eta_scale": 1.0905077326652577,
+  "guardrails": "relative to retrained 5x5: action, m2, m4, Gpmin, positivity, max_invK",
+  "selection": "best acceptable 7x7 candidate initialized from retrained 5x5",
+  "source_candidate": "full_no33_from_retrained_0479"
+}

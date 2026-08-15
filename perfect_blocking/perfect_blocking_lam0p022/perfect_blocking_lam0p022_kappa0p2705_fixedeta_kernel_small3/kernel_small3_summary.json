@@ -1,0 +1,807 @@
+{
+  "status": "complete",
+  "diagnostic_only": true,
+  "lambda": 0.022,
+  "kappa": 0.2705,
+  "eta": 0.25,
+  "eta_scale": 1.0905077326652577,
+  "ansatz": [
+    "w00",
+    "w10",
+    "w11"
+  ],
+  "normalization": "sum K = 1 before eta scaling",
+  "convention": "psi = 2^(eta/2) K phi; all four sublattices used as correlated blocked samples; no average",
+  "fine32": {
+    "path": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/phi4_phase-diagram/ensembles/lam0p022_kappa0p271_L32_embedded_wolff_sign_cluster_plus_radial_heatbath/configs.npz",
+    "manifest": {
+      "L": 32,
+      "M2": null,
+      "action_convention": "S=sum_x[(1-2*lambda)*phi_x^2 + lambda*phi_x^4] - 2*kappa*sum_x,mu phi_x phi_{x+mu}; constant lambda omitted",
+      "amplitude_update": "radial_heatbath",
+      "canonical": true,
+      "configs_file": "configs.npz",
+      "date_copied": null,
+      "date_generated": "2026-06-25T14:07:48.955462+00:00",
+      "dtype": "float32",
+      "generator": "embedded_wolff_sign_cluster_plus_radial_heatbath",
+      "is_canonical": true,
+      "is_superseded": false,
+      "kappa": 0.2705,
+      "lambda": 0.022,
+      "local_metropolis_used": false,
+      "n_configs": 1000,
+      "notes": "Canonical finite-lambda generator: embedded Wolff sign clusters plus radial heat-bath amplitude updates.",
+      "parameter_status": "metadata",
+      "production_use": true,
+      "seed": 20262732,
+      "shape": [
+        1000,
+        32,
+        32
+      ],
+      "sign_update": "embedded_wolff_cluster",
+      "source_path": "phi4_phase-diagram/ensembles/lam0p022_kappa0p271_L32_embedded_wolff_sign_cluster_plus_radial_heatbath/configs.npz"
+    },
+    "shape": [
+      1000,
+      32,
+      32
+    ]
+  },
+  "direct16": {
+    "path": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/phi4_phase-diagram/ensembles/lam0p022_kappa0p2705_L16_embedded_wolff_sign_cluster_plus_radial_heatbath_N5000/configs.npz",
+    "manifest": {
+      "L": 16,
+      "M2": null,
+      "action_convention": "S=sum_x[(1-2*lambda)*phi_x^2 + lambda*phi_x^4] - 2*kappa*sum_x,mu phi_x phi_{x+mu}; constant lambda omitted",
+      "amplitude_update": "radial_heatbath",
+      "canonical": true,
+      "configs_file": "configs.npz",
+      "date_copied": null,
+      "date_generated": "2026-06-25T19:05:11.895001+00:00",
+      "dtype": "float32",
+      "generator": "embedded_wolff_sign_cluster_plus_radial_heatbath",
+      "is_canonical": true,
+      "is_superseded": false,
+      "kappa": 0.2705,
+      "lambda": 0.022,
+      "local_metropolis_used": false,
+      "n_configs": 5000,
+      "notes": "Canonical finite-lambda generator: embedded Wolff sign clusters plus radial heat-bath amplitude updates.",
+      "parameter_status": "metadata",
+      "production_use": true,
+      "seed": 2026270516,
+      "shape": [
+        5000,
+        16,
+        16
+      ],
+      "sign_update": "embedded_wolff_cluster",
+      "source_path": "phi4_phase-diagram/ensembles/lam0p022_kappa0p2705_L16_embedded_wolff_sign_cluster_plus_radial_heatbath_N5000/configs.npz"
+    },
+    "shape": [
+      5000,
+      16,
+      16
+    ]
+  },
+  "fine16": {
+    "path": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/phi4_phase-diagram/ensembles/lam0p022_kappa0p2705_L16_embedded_wolff_sign_cluster_plus_radial_heatbath_N5000/configs.npz",
+    "manifest": {
+      "L": 16,
+      "M2": null,
+      "action_convention": "S=sum_x[(1-2*lambda)*phi_x^2 + lambda*phi_x^4] - 2*kappa*sum_x,mu phi_x phi_{x+mu}; constant lambda omitted",
+      "amplitude_update": "radial_heatbath",
+      "canonical": true,
+      "configs_file": "configs.npz",
+      "date_copied": null,
+      "date_generated": "2026-06-25T19:05:11.895001+00:00",
+      "dtype": "float32",
+      "generator": "embedded_wolff_sign_cluster_plus_radial_heatbath",
+      "is_canonical": true,
+      "is_superseded": false,
+      "kappa": 0.2705,
+      "lambda": 0.022,
+      "local_metropolis_used": false,
+      "n_configs": 5000,
+      "notes": "Canonical finite-lambda generator: embedded Wolff sign clusters plus radial heat-bath amplitude updates.",
+      "parameter_status": "metadata",
+      "production_use": true,
+      "seed": 2026270516,
+      "shape": [
+        5000,
+        16,
+        16
+      ],
+      "sign_update": "embedded_wolff_cluster",
+      "source_path": "phi4_phase-diagram/ensembles/lam0p022_kappa0p2705_L16_embedded_wolff_sign_cluster_plus_radial_heatbath_N5000/configs.npz"
+    },
+    "shape": [
+      5000,
+      16,
+      16
+    ]
+  },
+  "direct8": {
+    "path": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/phi4_phase-diagram/ensembles/lam0p022_kappa0p2705_L8_embedded_wolff_sign_cluster_plus_radial_heatbath_N5000/configs.npz",
+    "manifest": {
+      "L": 8,
+      "M2": null,
+      "action_convention": "S=sum_x[(1-2*lambda)*phi_x^2 + lambda*phi_x^4] - 2*kappa*sum_x,mu phi_x phi_{x+mu}; constant lambda omitted",
+      "amplitude_update": "radial_heatbath",
+      "canonical": true,
+      "configs_file": "configs.npz",
+      "date_copied": null,
+      "date_generated": "2026-06-25T19:04:36.763760+00:00",
+      "dtype": "float32",
+      "generator": "embedded_wolff_sign_cluster_plus_radial_heatbath",
+      "is_canonical": true,
+      "is_superseded": false,
+      "kappa": 0.2705,
+      "lambda": 0.022,
+      "local_metropolis_used": false,
+      "n_configs": 5000,
+      "notes": "Canonical finite-lambda generator: embedded Wolff sign clusters plus radial heat-bath amplitude updates.",
+      "parameter_status": "metadata",
+      "production_use": true,
+      "seed": 2026270508,
+      "shape": [
+        5000,
+        8,
+        8
+      ],
+      "sign_update": "embedded_wolff_cluster",
+      "source_path": "phi4_phase-diagram/ensembles/lam0p022_kappa0p2705_L8_embedded_wolff_sign_cluster_plus_radial_heatbath_N5000/configs.npz"
+    },
+    "shape": [
+      5000,
+      8,
+      8
+    ]
+  },
+  "compare_n_L32": 1000,
+  "opt_n_L32": 500,
+  "best_start": "edge_only",
+  "weights_shells": {
+    "w00": 0.648926023044007,
+    "w10": 0.10213606494124894,
+    "w11": -0.01436757070225069
+  },
+  "normalization_check": 1.0,
+  "kernel_3x3": [
+    [
+      -0.01436757070225069,
+      0.10213606494124894,
+      -0.01436757070225069
+    ],
+    [
+      0.10213606494124894,
+      0.648926023044007,
+      0.10213606494124894
+    ],
+    [
+      -0.01436757070225069,
+      0.10213606494124894,
+      -0.01436757070225069
+    ]
+  ],
+  "eta_scaled_kernel_3x3": [
+    [
+      -0.015667946950419183,
+      0.1113801686024329,
+      -0.015667946950419183
+    ],
+    [
+      0.1113801686024329,
+      0.7076588460572029,
+      0.1113801686024329
+    ],
+    [
+      -0.015667946950419183,
+      0.1113801686024329,
+      -0.015667946950419183
+    ]
+  ],
+  "primary_L32_to_L16": {
+    "score": {
+      "D_op": 4538.95631244264,
+      "normalized_rms": 0.09644878446198195,
+      "rms_z": 11.62925811923227,
+      "max_abs_z": 18.80502925607617,
+      "cov_condition": 6747693.271820317
+    },
+    "blocked_metrics": {
+      "phi2": 1.4861645344540875,
+      "phi4": 4.581928903457679,
+      "NN": 1.0467373007668306,
+      "nn2": 2.7959777355449993,
+      "action_density": 0.3890059713844655,
+      "m": 0.007524908762352305,
+      "abs_m": 0.8003262948541431,
+      "m2": 0.711094376764539,
+      "m4": 0.6429714814098044,
+      "Binder_U4": 0.5761463112254994,
+      "binder_B4": 1.2715610663235017,
+      "binder_Q": 0.7864348999701026,
+      "susceptibility": 182.040160451722,
+      "xi_over_L": 0.765383391013679
+    },
+    "direct_metrics": {
+      "phi2": 1.5285971945757129,
+      "phi4": 5.149076665740189,
+      "NN": 1.0977498831328882,
+      "nn2": 3.2030267608913054,
+      "action_density": 0.38685323111088055,
+      "m": 0.02729969090084412,
+      "abs_m": 0.8256381587365127,
+      "m2": 0.7666159509727329,
+      "m4": 0.7739174542137698,
+      "Binder_U4": 0.5610473411788057,
+      "binder_B4": 1.316857976463583,
+      "binder_Q": 0.7593833335660815,
+      "susceptibility": 196.25368344901963,
+      "xi_over_L": 0.7866197867122976
+    },
+    "operator_rows": [
+      {
+        "match": "L32_to_L16",
+        "operator": "phi2",
+        "blocked_mean": 1.4861645344540875,
+        "direct_mean": 1.5285971945757129,
+        "delta": -0.04243266012162539,
+        "combined_error": 0.005963086641548999,
+        "z": -7.115888577899797
+      },
+      {
+        "match": "L32_to_L16",
+        "operator": "phi4",
+        "blocked_mean": 4.581928903457679,
+        "direct_mean": 5.149076665740189,
+        "delta": -0.5671477622825103,
+        "combined_error": 0.03015936612272256,
+        "z": -18.80502925607617
+      },
+      {
+        "match": "L32_to_L16",
+        "operator": "NN",
+        "blocked_mean": 1.0467373007668306,
+        "direct_mean": 1.0977498831328882,
+        "delta": -0.05101258236605766,
+        "combined_error": 0.006360682817240818,
+        "z": -8.019985248719925
+      },
+      {
+        "match": "L32_to_L16",
+        "operator": "nn2",
+        "blocked_mean": 2.7959777355449993,
+        "direct_mean": 3.2030267608913054,
+        "delta": -0.40704902534630616,
+        "combined_error": 0.022280128478154377,
+        "z": -18.269599555739408
+      },
+      {
+        "match": "L32_to_L16",
+        "operator": "action_density",
+        "blocked_mean": 0.3890059713844655,
+        "direct_mean": 0.38685323111088055,
+        "delta": 0.0021527402735849743,
+        "combined_error": 0.0011223759679207775,
+        "z": 1.9180206411341523
+      },
+      {
+        "match": "L32_to_L16",
+        "operator": "m2",
+        "blocked_mean": 0.711094376764539,
+        "direct_mean": 0.7666159509727329,
+        "delta": -0.055521574208193925,
+        "combined_error": 0.008461004040417237,
+        "z": -6.562055040155258
+      },
+      {
+        "match": "L32_to_L16",
+        "operator": "m4",
+        "blocked_mean": 0.6429714814098044,
+        "direct_mean": 0.7739174542137698,
+        "delta": -0.13094597280396536,
+        "combined_error": 0.013256335959008238,
+        "z": -9.877991415492307
+      },
+      {
+        "match": "L32_to_L16",
+        "operator": "Binder_U4",
+        "blocked_mean": 0.5761463112254994,
+        "direct_mean": 0.5610473411788057,
+        "delta": 0.015098970046693694,
+        "combined_error": "",
+        "z": ""
+      },
+      {
+        "match": "L32_to_L16",
+        "operator": "susceptibility",
+        "blocked_mean": 182.040160451722,
+        "direct_mean": 196.25368344901963,
+        "delta": -14.213522997297645,
+        "combined_error": "",
+        "z": ""
+      },
+      {
+        "match": "L32_to_L16",
+        "operator": "xi_over_L",
+        "blocked_mean": 0.765383391013679,
+        "direct_mean": 0.7866197867122976,
+        "delta": -0.02123639569861857,
+        "combined_error": "",
+        "z": ""
+      }
+    ],
+    "fft": {
+      "min_abs_Ktilde": 0.18291148047000855,
+      "max_abs_Ktilde": 1.0,
+      "min_abs_Keta_tilde": 0.19946638384579457,
+      "max_abs_Keta_tilde": 1.0905077326652577,
+      "condition_number_abs": 5.467125395466727
+    },
+    "roundtrip": {
+      "max_abs_real_error": 1.7763568394002505e-15,
+      "rms_real_error": 4.2111769159944847e-16,
+      "max_abs_imag": 6.944428823255198e-16
+    }
+  },
+  "transfer_L16_to_L8": {
+    "score": {
+      "D_op": 1523.9364771503228,
+      "normalized_rms": 0.13958699148952505,
+      "rms_z": 13.066476981743065,
+      "max_abs_z": 17.844335413324895,
+      "cov_condition": 6807052.602615469
+    },
+    "blocked_metrics": {
+      "phi2": 1.538490149883447,
+      "phi4": 4.819194790373707,
+      "NN": 1.1096517157568284,
+      "nn2": 2.9710444889409255,
+      "action_density": 0.37617571222790813,
+      "m": 0.02977052402674189,
+      "abs_m": 0.9005951451186849,
+      "m2": 0.9137398075847792,
+      "m4": 1.105595169980515,
+      "Binder_U4": 0.5586025836092283,
+      "binder_B4": 1.324192249172315,
+      "binder_Q": 0.7551773548176626,
+      "susceptibility": 58.47934768542587,
+      "xi_over_L": 0.7887871344224016
+    },
+    "direct_metrics": {
+      "phi2": 1.6329787143953731,
+      "phi4": 5.669512701555153,
+      "NN": 1.2111948626897213,
+      "nn2": 3.6121363229866432,
+      "action_density": 0.37534408896591137,
+      "m": 0.019166209394713862,
+      "abs_m": 0.9324227702925855,
+      "m2": 1.0142369961803155,
+      "m4": 1.4729374300289793,
+      "Binder_U4": 0.5227080084745893,
+      "binder_B4": 1.4318759745762322,
+      "binder_Q": 0.698384509381794,
+      "susceptibility": 64.91116775554019,
+      "xi_over_L": 0.8199306427834666
+    },
+    "operator_rows": [
+      {
+        "match": "L16_to_L8",
+        "operator": "phi2",
+        "blocked_mean": 1.538490149883447,
+        "direct_mean": 1.6329787143953731,
+        "delta": -0.09448856451192622,
+        "combined_error": 0.008949599947741917,
+        "z": -10.557853430729798
+      },
+      {
+        "match": "L16_to_L8",
+        "operator": "phi4",
+        "blocked_mean": 4.819194790373707,
+        "direct_mean": 5.669512701555153,
+        "delta": -0.8503179111814454,
+        "combined_error": 0.04776080652114954,
+        "z": -17.80367571483337
+      },
+      {
+        "match": "L16_to_L8",
+        "operator": "NN",
+        "blocked_mean": 1.1096517157568284,
+        "direct_mean": 1.2111948626897213,
+        "delta": -0.1015431469328929,
+        "combined_error": 0.009371469442853874,
+        "z": -10.835349520381104
+      },
+      {
+        "match": "L16_to_L8",
+        "operator": "nn2",
+        "blocked_mean": 2.9710444889409255,
+        "direct_mean": 3.6121363229866432,
+        "delta": -0.6410918340457177,
+        "combined_error": 0.03592691009198333,
+        "z": -17.844335413324895
+      },
+      {
+        "match": "L16_to_L8",
+        "operator": "action_density",
+        "blocked_mean": 0.37617571222790813,
+        "direct_mean": 0.37534408896591137,
+        "delta": 0.0008316232619967612,
+        "combined_error": 0.0015133564371568834,
+        "z": 0.5495224003930742
+      },
+      {
+        "match": "L16_to_L8",
+        "operator": "m2",
+        "blocked_mean": 0.9137398075847792,
+        "direct_mean": 1.0142369961803155,
+        "delta": -0.10049718859553625,
+        "combined_error": 0.010119502780655112,
+        "z": -9.931040168065481
+      },
+      {
+        "match": "L16_to_L8",
+        "operator": "m4",
+        "blocked_mean": 1.105595169980515,
+        "direct_mean": 1.4729374300289793,
+        "delta": -0.36734226004846415,
+        "combined_error": 0.024120425784500524,
+        "z": -15.229509766138273
+      },
+      {
+        "match": "L16_to_L8",
+        "operator": "Binder_U4",
+        "blocked_mean": 0.5586025836092283,
+        "direct_mean": 0.5227080084745893,
+        "delta": 0.035894575134639006,
+        "combined_error": "",
+        "z": ""
+      },
+      {
+        "match": "L16_to_L8",
+        "operator": "susceptibility",
+        "blocked_mean": 58.47934768542587,
+        "direct_mean": 64.91116775554019,
+        "delta": -6.43182007011432,
+        "combined_error": "",
+        "z": ""
+      },
+      {
+        "match": "L16_to_L8",
+        "operator": "xi_over_L",
+        "blocked_mean": 0.7887871344224016,
+        "direct_mean": 0.8199306427834666,
+        "delta": -0.031143508361065053,
+        "combined_error": "",
+        "z": ""
+      }
+    ],
+    "fft": {
+      "min_abs_Ktilde": 0.18291148047000855,
+      "max_abs_Ktilde": 1.0,
+      "min_abs_Keta_tilde": 0.19946638384579457,
+      "max_abs_Keta_tilde": 1.0905077326652577,
+      "condition_number_abs": 5.467125395466727
+    },
+    "roundtrip": {
+      "max_abs_real_error": 1.7763568394002505e-15,
+      "rms_real_error": 4.063517206157315e-16,
+      "max_abs_imag": 8.136436339498624e-16
+    }
+  },
+  "old5_projected_L32_to_L16": {
+    "score": {
+      "D_op": 58698.62173968518,
+      "normalized_rms": 0.6492944026902691,
+      "rms_z": 112.66436156162425,
+      "max_abs_z": 142.44626648150503,
+      "cov_condition": 6779299.057616327
+    },
+    "blocked_metrics": {
+      "phi2": 0.8248047738497607,
+      "phi4": 1.631874893178701,
+      "NN": 0.3739671685887909,
+      "nn2": 0.7374822206176763,
+      "action_density": 0.41978213503723083,
+      "m": 0.004506906977611578,
+      "abs_m": 0.4794738028036104,
+      "m2": 0.2560002553326782,
+      "m4": 0.08414091596903747,
+      "Binder_U4": 0.5720380242608578,
+      "binder_B4": 1.2838859272174263,
+      "binder_Q": 0.7788853969038403,
+      "susceptibility": 65.53606536516561,
+      "xi_over_L": 0.7303416222730647
+    },
+    "direct_metrics": {
+      "phi2": 1.5285971945757129,
+      "phi4": 5.149076665740189,
+      "NN": 1.0977498831328882,
+      "nn2": 3.2030267608913054,
+      "action_density": 0.38685323111088055,
+      "m": 0.02729969090084412,
+      "abs_m": 0.8256381587365127,
+      "m2": 0.7666159509727329,
+      "m4": 0.7739174542137698,
+      "Binder_U4": 0.5610473411788057,
+      "binder_B4": 1.316857976463583,
+      "binder_Q": 0.7593833335660815,
+      "susceptibility": 196.25368344901963,
+      "xi_over_L": 0.7866197867122976
+    },
+    "operator_rows": [
+      {
+        "match": "old5_projected_L32_to_L16",
+        "operator": "phi2",
+        "blocked_mean": 0.8248047738497607,
+        "direct_mean": 1.5285971945757129,
+        "delta": -0.7037924207259522,
+        "combined_error": 0.004940757228041012,
+        "z": -142.44626648150503
+      },
+      {
+        "match": "old5_projected_L32_to_L16",
+        "operator": "phi4",
+        "blocked_mean": 1.631874893178701,
+        "direct_mean": 5.149076665740189,
+        "delta": -3.517201772561488,
+        "combined_error": 0.025150342091394,
+        "z": -139.84707483422312
+      },
+      {
+        "match": "old5_projected_L32_to_L16",
+        "operator": "NN",
+        "blocked_mean": 0.3739671685887909,
+        "direct_mean": 1.0977498831328882,
+        "delta": -0.7237827145440974,
+        "combined_error": 0.005194068796193587,
+        "z": -139.34792605644984
+      },
+      {
+        "match": "old5_projected_L32_to_L16",
+        "operator": "nn2",
+        "blocked_mean": 0.7374822206176763,
+        "direct_mean": 3.2030267608913054,
+        "delta": -2.465544540273629,
+        "combined_error": 0.018459060075870413,
+        "z": -133.56826025484233
+      },
+      {
+        "match": "old5_projected_L32_to_L16",
+        "operator": "action_density",
+        "blocked_mean": 0.41978213503723083,
+        "direct_mean": 0.38685323111088055,
+        "delta": 0.032928903926350284,
+        "combined_error": 0.0010466028903798723,
+        "z": 31.462653341611254
+      },
+      {
+        "match": "old5_projected_L32_to_L16",
+        "operator": "m2",
+        "blocked_mean": 0.2560002553326782,
+        "direct_mean": 0.7666159509727329,
+        "delta": -0.5106156956400547,
+        "combined_error": 0.006473275613833631,
+        "z": -78.8805739321295
+      },
+      {
+        "match": "old5_projected_L32_to_L16",
+        "operator": "m4",
+        "blocked_mean": 0.08414091596903747,
+        "direct_mean": 0.7739174542137698,
+        "delta": -0.6897765382447323,
+        "combined_error": 0.010243619187546312,
+        "z": -67.33719065653364
+      },
+      {
+        "match": "old5_projected_L32_to_L16",
+        "operator": "Binder_U4",
+        "blocked_mean": 0.5720380242608578,
+        "direct_mean": 0.5610473411788057,
+        "delta": 0.010990683082052088,
+        "combined_error": "",
+        "z": ""
+      },
+      {
+        "match": "old5_projected_L32_to_L16",
+        "operator": "susceptibility",
+        "blocked_mean": 65.53606536516561,
+        "direct_mean": 196.25368344901963,
+        "delta": -130.717618083854,
+        "combined_error": "",
+        "z": ""
+      },
+      {
+        "match": "old5_projected_L32_to_L16",
+        "operator": "xi_over_L",
+        "blocked_mean": 0.7303416222730647,
+        "direct_mean": 0.7866197867122976,
+        "delta": -0.05627816443923295,
+        "combined_error": "",
+        "z": ""
+      }
+    ],
+    "fft": {
+      "min_abs_Ktilde": 0.5989317771080471,
+      "max_abs_Ktilde": 0.9675764025140676,
+      "min_abs_Keta_tilde": 0.65313973427527,
+      "max_abs_Keta_tilde": 1.0551495488860225,
+      "condition_number_abs": 1.615503533951776
+    },
+    "roundtrip": {
+      "max_abs_real_error": 1.7763568394002505e-15,
+      "rms_real_error": 2.6255888250362425e-16,
+      "max_abs_imag": 6.96610009785494e-16
+    }
+  },
+  "old5_projected_L16_to_L8": {
+    "score": {
+      "D_op": 25179.201412668044,
+      "normalized_rms": 0.6626885776996736,
+      "rms_z": 76.15893525458391,
+      "max_abs_z": 92.86469514007908,
+      "cov_condition": 6809281.034208326
+    },
+    "blocked_metrics": {
+      "phi2": 0.8413108970811111,
+      "phi4": 1.6861868905488788,
+      "NN": 0.39559713299912475,
+      "nn2": 0.7661840180792943,
+      "action_density": 0.41335323129656437,
+      "m": 0.017830512860774334,
+      "abs_m": 0.5399795217467067,
+      "m2": 0.3313471098713592,
+      "m4": 0.14923303702252275,
+      "Binder_U4": 0.5469174366648633,
+      "binder_B4": 1.3592476900054105,
+      "binder_Q": 0.735701084764043,
+      "susceptibility": 21.206215031766988,
+      "xi_over_L": 0.6854300694737997
+    },
+    "direct_metrics": {
+      "phi2": 1.6329787143953731,
+      "phi4": 5.669512701555153,
+      "NN": 1.2111948626897213,
+      "nn2": 3.6121363229866432,
+      "action_density": 0.37534408896591137,
+      "m": 0.019166209394713862,
+      "abs_m": 0.9324227702925855,
+      "m2": 1.0142369961803155,
+      "m4": 1.4729374300289793,
+      "Binder_U4": 0.5227080084745893,
+      "binder_B4": 1.4318759745762322,
+      "binder_Q": 0.698384509381794,
+      "susceptibility": 64.91116775554019,
+      "xi_over_L": 0.8199306427834666
+    },
+    "operator_rows": [
+      {
+        "match": "old5_projected_L16_to_L8",
+        "operator": "phi2",
+        "blocked_mean": 0.8413108970811111,
+        "direct_mean": 1.6329787143953731,
+        "delta": -0.7916678173142621,
+        "combined_error": 0.008524960062810668,
+        "z": -92.86469514007908
+      },
+      {
+        "match": "old5_projected_L16_to_L8",
+        "operator": "phi4",
+        "blocked_mean": 1.6861868905488788,
+        "direct_mean": 5.669512701555153,
+        "delta": -3.983325811006274,
+        "combined_error": 0.04567762566043266,
+        "z": -87.20518532680106
+      },
+      {
+        "match": "old5_projected_L16_to_L8",
+        "operator": "NN",
+        "blocked_mean": 0.39559713299912475,
+        "direct_mean": 1.2111948626897213,
+        "delta": -0.8155977296905965,
+        "combined_error": 0.008895373090520818,
+        "z": -91.68786080032129
+      },
+      {
+        "match": "old5_projected_L16_to_L8",
+        "operator": "nn2",
+        "blocked_mean": 0.7661840180792943,
+        "direct_mean": 3.6121363229866432,
+        "delta": -2.8459523049073487,
+        "combined_error": 0.034343458573209654,
+        "z": -82.86737629643959
+      },
+      {
+        "match": "old5_projected_L16_to_L8",
+        "operator": "action_density",
+        "blocked_mean": 0.41335323129656437,
+        "direct_mean": 0.37534408896591137,
+        "delta": 0.038009142330653,
+        "combined_error": 0.001492931188949471,
+        "z": 25.459406710766654
+      },
+      {
+        "match": "old5_projected_L16_to_L8",
+        "operator": "m2",
+        "blocked_mean": 0.3313471098713592,
+        "direct_mean": 1.0142369961803155,
+        "delta": -0.6828898863089563,
+        "combined_error": 0.00953111369183157,
+        "z": -71.64848813987099
+      },
+      {
+        "match": "old5_projected_L16_to_L8",
+        "operator": "m4",
+        "blocked_mean": 0.14923303702252275,
+        "direct_mean": 1.4729374300289793,
+        "delta": -1.3237043930064565,
+        "combined_error": 0.022982451560708772,
+        "z": -57.596309493347796
+      },
+      {
+        "match": "old5_projected_L16_to_L8",
+        "operator": "Binder_U4",
+        "blocked_mean": 0.5469174366648633,
+        "direct_mean": 0.5227080084745893,
+        "delta": 0.02420942819027394,
+        "combined_error": "",
+        "z": ""
+      },
+      {
+        "match": "old5_projected_L16_to_L8",
+        "operator": "susceptibility",
+        "blocked_mean": 21.206215031766988,
+        "direct_mean": 64.91116775554019,
+        "delta": -43.704952723773204,
+        "combined_error": "",
+        "z": ""
+      },
+      {
+        "match": "old5_projected_L16_to_L8",
+        "operator": "xi_over_L",
+        "blocked_mean": 0.6854300694737997,
+        "direct_mean": 0.8199306427834666,
+        "delta": -0.13450057330966692,
+        "combined_error": "",
+        "z": ""
+      }
+    ],
+    "fft": {
+      "min_abs_Ktilde": 0.5989317771080471,
+      "max_abs_Ktilde": 0.9675764025140676,
+      "min_abs_Keta_tilde": 0.65313973427527,
+      "max_abs_Keta_tilde": 1.0551495488860225,
+      "condition_number_abs": 1.615503533951776
+    },
+    "roundtrip": {
+      "max_abs_real_error": 8.881784197001252e-16,
+      "rms_real_error": 2.4001007515480943e-16,
+      "max_abs_imag": 4.659767636510569e-16
+    }
+  },
+  "large_kernel_scores": {
+    "L32_to_L16": {
+      "D_op": 1288.9968992161266,
+      "normalized_rms": 0.07038233979986225,
+      "rms_z": 5.696563767111983,
+      "max_abs_z": 9.375758463122212,
+      "cov_condition": 6758493.714270663
+    },
+    "L16_to_L8": {
+      "D_op": 781.288564288654,
+      "normalized_rms": 0.10783984481983101,
+      "rms_z": 8.894507938285969,
+      "max_abs_z": 14.067143859307883,
+      "cov_condition": 6807689.784725242
+    },
+    "condition": 2.5752489970795773
+  },
+  "flags": [
+    "min |K_eta(q)| below 0.25",
+    "condition number more than twice old projected 3-orbit"
+  ]
+}

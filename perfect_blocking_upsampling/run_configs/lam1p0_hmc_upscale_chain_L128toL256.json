@@ -1,0 +1,24 @@
+{
+  "lambda": 1.0,
+  "kappa": 0.340301,
+  "n_chains": 1500,
+  "start_index": 0,
+  "batch_size": 25,
+  "seed": 2026081311,
+  "initial_source": "perfect_blocking_upsampling/outputs/hmc_upscale_chain_lam1p0/L8toL128/L8toL128_N1500_start0_HMCtherm100_100_100_100_d2_r2/final_phi.npz",
+  "levels": [
+    {
+      "to_L": 256,
+      "thermalization_sweeps": 100,
+      "measure_every": 5,
+      "checkpoint_every": 20,
+      "hmc_batch_size": 25,
+      "stream_initialization": true,
+      "divide": 2,
+      "step_size": 0.08,
+      "leapfrog_steps": 10,
+      "flow_checkpoint": "perfect_blocking_upsampling/runs/lam1p0/training/lam1p0_L16to32_alternatingKL_highcorr5_r1_iteration5/flow5/stage_oo/checkpoints/checkpoint_best_nll.pt",
+      "kernel_path": "perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/alternatingKL_L16to32_highcorr5_r1_iteration5/iteration5.json"
+    }
+  ]
+}

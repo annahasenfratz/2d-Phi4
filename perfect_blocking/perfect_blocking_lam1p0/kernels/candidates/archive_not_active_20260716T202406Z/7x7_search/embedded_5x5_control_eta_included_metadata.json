@@ -1,0 +1,7 @@
+{
+  "base_kernel_sum_before_eta_scale": 1.0,
+  "candidate_json": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_search/embedded_5x5_control_eta_included.json",
+  "candidate_txt": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_search/embedded_5x5_control_eta_included.txt",
+  "description": "current final 5x5 base kernel embedded in 7x7 with zero outer shell",
+  "final_kernel_sum_after_eta_scale": 1.090507732665258
+}

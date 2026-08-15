@@ -1,0 +1,29 @@
+{
+  "name": "allL16_chi2_R2_corrW5000_highcorr_5x5_eta_included",
+  "type": "matrix",
+  "eta": 0.25,
+  "scale_factor": 2,
+  "block_factor": 2,
+  "eta_scale": "2^0.125",
+  "eta_scale_numeric": 1.0905077326652577,
+  "kernel_coefficients_include_eta_scale": true,
+  "normalization": "eta_included_sum_to_eta_scale",
+  "convention": "stored coefficients include eta scale; do not multiply again on application",
+  "family": "allL16_chi2_R2_corrW5000",
+  "selection_note": "Candidate 5x5 kernel from the all-direct-L16, high-correlation-weight chi2 search.  It is not a promoted production kernel.",
+  "matrix": [
+    [-0.008698059848262414, 0.029361192510371847, 0.045348876305026466, 0.029361192510371847, -0.008698059848262414],
+    [0.029361192510371847, 0.002471324749917733, -0.05522649399428297, 0.002471324749917733, 0.029361192510371847],
+    [0.045348876305026466, -0.05522649399428297, 0.9200356037326877, -0.05522649399428297, 0.045348876305026466],
+    [0.029361192510371847, 0.002471324749917733, -0.05522649399428297, 0.002471324749917733, 0.029361192510371847],
+    [-0.008698059848262414, 0.029361192510371847, 0.045348876305026466, 0.029361192510371847, -0.008698059848262414]
+  ],
+  "final_kernel_sum_after_eta_scale": 1.0905077326652577,
+  "momentum_stability": {
+    "min_K": 0.6243419608881228,
+    "max_K": 1.1827425745861782,
+    "min_inverse_K": 0.8454925200861085,
+    "max_inverse_K": 1.6016863556271403,
+    "condition_number": 1.894412710517114
+  }
+}

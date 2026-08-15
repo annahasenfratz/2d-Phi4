@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+  cat >&2 <<'EOF'
+Usage:
+  ./analyze_upscaled RUN_NAME_OR_PATH [--sweep latest|all|N] [other analyzer args]
+
+Examples:
+  ./analyze_upscaled mit4_bL32_wrapped_RQS_cfg0_N128_S100_* --sweep 100
+  ./analyze_upscaled /absolute/path/to/mit_run --sweep latest
+  ./analyze_upscaled /absolute/path/to/combined_run --sweep 400 --bin-size 8
+EOF
+  exit 2
+fi
+
+RUN_INPUT="$1"
+shift
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+if [[ -x "../../.venv/bin/python" ]]; then
+  PYTHON="../../.venv/bin/python"
+elif [[ -x ".venv/bin/python" ]]; then
+  PYTHON=".venv/bin/python"
+else
+  echo "ERROR: could not find ../../.venv/bin/python or .venv/bin/python" >&2
+  exit 2
+fi
+
+resolve_run_dir() {
+  local input="$1"
+  local candidates=()
+  local roots=()
+
+  candidates+=("$input")
+  roots+=("perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/mit_style_inverse_blocking_L8to16")
+  roots+=("perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/mit_style_inverse_blocking_L16to32")
+  roots+=("perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/mit_style_four_substep_L8to16")
+  roots+=("perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/mit_style_four_substep_L16to32")
+  roots+=("perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/mit_style_four_substep_L32to64")
+  roots+=("perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/mit_coordinate_mh_L8to16")
+  roots+=("perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/mit_coordinate_mh_L16to32")
+  roots+=("perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/mit_coordinate_mh_L32to64")
+  roots+=("perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/coarse_detail_L16to32")
+  roots+=("perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/coarse_detail_L32to64")
+
+  local root
+  for root in "${roots[@]}"; do
+    candidates+=("$root/$input")
+  done
+
+  for path in "${candidates[@]}"; do
+    if [[ -d "$path" ]]; then
+      printf '%s\n' "$path"
+      return 0
+    fi
+  done
+
+  local matches=()
+  local old_nullglob
+  old_nullglob="$(shopt -p nullglob || true)"
+  shopt -s nullglob
+  for root in "${roots[@]}"; do
+    local match
+    for match in "$root"/"$input"*; do
+      if [[ -d "$match" ]]; then
+        matches+=("$match")
+      fi
+    done
+  done
+  eval "$old_nullglob"
+
+  if [[ "${#matches[@]}" -eq 1 ]]; then
+    printf '%s\n' "${matches[0]}"
+    return 0
+  elif [[ "${#matches[@]}" -gt 1 ]]; then
+    echo "ERROR: ambiguous run prefix: $input" >&2
+    echo "Matches:" >&2
+    for path in "${matches[@]}"; do
+      echo "  $path" >&2
+    done
+    return 2
+  fi
+
+  echo "ERROR: could not resolve run directory for: $input" >&2
+  echo "Looked for:" >&2
+  for path in "${candidates[@]}"; do
+    echo "  $path" >&2
+  done
+  return 2
+}
+
+RUN_DIR="$(resolve_run_dir "$RUN_INPUT")"
+
+exec "$PYTHON" -B perfect_blocking_upsampling/scripts/analyze_coarse_detail_run_partial.py "$RUN_DIR" "$@"

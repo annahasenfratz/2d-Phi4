@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Bounded/local default launcher. It delegates to the canonical submit script
+# while isolating its generated YAML from the wrapped baseline launcher.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec env \
+  INITIALIZATION_MODE="${INITIALIZATION_MODE:-empirical_sample}" \
+  GENERATED_CONFIG="${GENERATED_CONFIG:-perfect_blocking_upsampling/run_configs/generated/submit_flow_detail_coarse_local_lam1p0.yaml}" \
+  "$ROOT/submit_flow_detail_coarse_detail" "$@"

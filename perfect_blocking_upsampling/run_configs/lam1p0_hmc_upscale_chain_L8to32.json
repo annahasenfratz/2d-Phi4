@@ -1,0 +1,29 @@
+{
+  "lambda": 1.0,
+  "kappa": 0.340301,
+  "n_chains": 1500,
+  "start_index": 0,
+  "batch_size": 50,
+  "seed": 2026081303,
+  "initial_source": "data/configs_phi4_2d/lam1p0_kappac0p340301_L8/configs.npz",
+  "levels": [
+    {
+      "to_L": 16,
+      "thermalization_sweeps": 50,
+      "divide": 1,
+      "step_size": 0.08,
+      "leapfrog_steps": 10,
+      "flow_checkpoint": "perfect_blocking_upsampling/runs/lam1p0/training/lam1p0_L16to32_alternatingKL_highcorr5_r1_iteration5/flow5/stage_oo/checkpoints/checkpoint_best_nll.pt",
+      "kernel_path": "perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/alternatingKL_L16to32_highcorr5_r1_iteration5/iteration5.json"
+    },
+    {
+      "to_L": 32,
+      "thermalization_sweeps": 400,
+      "divide": 2,
+      "step_size": 0.08,
+      "leapfrog_steps": 10,
+      "flow_checkpoint": "perfect_blocking_upsampling/runs/lam1p0/training/lam1p0_L16to32_alternatingKL_highcorr5_r1_iteration5/flow5/stage_oo/checkpoints/checkpoint_best_nll.pt",
+      "kernel_path": "perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/alternatingKL_L16to32_highcorr5_r1_iteration5/iteration5.json"
+    }
+  ]
+}

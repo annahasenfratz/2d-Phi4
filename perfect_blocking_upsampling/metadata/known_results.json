@@ -1,0 +1,16 @@
+{
+  "proposal_std_logw": 1.4681302589235194,
+  "proposal_ess_over_n": 0.21655028662285222,
+  "proposal_phi4": 5.426358808487121,
+  "proposal_NN": 1.105682059240697,
+  "proposal_action_density": 0.39416794964654134,
+  "proposal_Binder_U4": 0.5331623915205224,
+  "proposal_xi_over_L": 0.8009345435051416,
+  "medium_ar_acceptance": 0.3257825782578258,
+  "target_phi4": 5.149076665740189,
+  "target_NN": 1.0977498831328882,
+  "target_action_density": 0.38685323111088055,
+  "target_Binder_U4": 0.5610473411788057,
+  "target_xi_over_L": 0.7866197867122976
+}
+

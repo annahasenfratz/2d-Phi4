@@ -1,0 +1,43 @@
+{
+  "base_kernel_name": "perfect_block_lam1_blockavg_kernel5x5",
+  "base_kernel_sum_before_eta_scale": 1.0,
+  "base_orbits_before_eta_scale": {
+    "00": 1.2452107664752865,
+    "10": 0.02303219116806363,
+    "11": -0.05717675326810384,
+    "20": 0.01321683573793746,
+    "21": -0.02738124126317247,
+    "22": 0.014387517269626041
+  },
+  "block_factor": 2,
+  "convention": "stored coefficients include eta_scale; do not multiply again on application",
+  "eta": 0.25,
+  "eta_scale": "2^0.125",
+  "eta_scale_numeric": 1.0905077326652577,
+  "final_kernel_sum_after_eta_scale": 1.0905077326652577,
+  "kappa_c": 0.340301,
+  "kappa_f": 0.340301,
+  "kernel_coefficients_include_eta_scale": true,
+  "lambda": 1.0,
+  "name": "blockavg_5x5_eta_included",
+  "normalization": "eta_included_sum_to_eta_scale",
+  "objective_metrics": {
+    "objective_definition": "D_op operator matching, Powell multiple starts"
+  },
+  "orbits": {
+    "00": 1.3579119696393325,
+    "10": 0.02511678256899784,
+    "11": -0.062351691567560784,
+    "20": 0.014413061573587328,
+    "21": -0.02985945532746261,
+    "22": 0.015689698836382132
+  },
+  "provenance": {
+    "note": "eta-included operational copy generated for lam1p0 validation"
+  },
+  "scale_factor": 2,
+  "selection_reason": "operator-matching block-average optimized 5x5 record; validate on current kappa_cr=0.340301",
+  "source": "InverseBlocking_MIT_NF/kernels/from_perfect_blocking_lam1p0_blockavg/perfect_block_lam1_blockavg_kernel5x5_kernel.json",
+  "source_candidate_kappa": 0.34008,
+  "type": "orbit_kernel"
+}

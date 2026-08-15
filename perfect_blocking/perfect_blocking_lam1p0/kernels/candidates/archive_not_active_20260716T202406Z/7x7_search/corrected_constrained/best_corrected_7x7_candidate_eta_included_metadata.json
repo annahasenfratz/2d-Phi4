@@ -1,0 +1,25 @@
+{
+  "base_kernel_sum_before_eta_scale": 1.0,
+  "candidate_json": "perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_search/corrected_constrained/best_corrected_7x7_candidate_eta_included.json",
+  "candidate_txt": "perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_search/corrected_constrained/best_corrected_7x7_candidate_eta_included.txt",
+  "final_kernel_sum_after_eta_scale": 1.090507732665258,
+  "guardrails": "action KS<=0.035, action JS<=0.005, m2/m4 KS<=0.025, Gpmin KS<=0.035, max_invK<=1.6",
+  "raw_metadata": {
+    "classes": {
+      "00": 0.7770108948049614,
+      "10": 0.027986023500293004,
+      "11": 0.014144504958094738,
+      "20": 0.014511700612423559,
+      "21": 0.002295030848553372,
+      "22": -0.007069713761149906,
+      "30": -0.01223603233884547,
+      "31": 0.004791540980427084,
+      "32": 0.002118824834991411,
+      "33": 0.0
+    },
+    "family": "edge_only_no33_random",
+    "outer_scale": 0.018
+  },
+  "selection": "best acceptable constrained candidate improving local score vs current 5x5",
+  "source_candidate": "edge_rand_0266"
+}

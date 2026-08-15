@@ -1,0 +1,3 @@
+test,passed,details
+empirical_resume,True,checkpoint advanced without reinitialization
+legacy_flow_resume,True,legacy flow-initialized clone extended successfully

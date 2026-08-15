@@ -1,0 +1,16 @@
+{
+  "base_kernel_sum_before_eta_scale": 1.0,
+  "candidate_json": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_search/edge_outer_no33_eta_included.json",
+  "candidate_txt": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_search/edge_outer_no33_eta_included.txt",
+  "final_kernel_sum_after_eta_scale": 1.0905077326652577,
+  "fun": 6.130151821011624,
+  "message": "Optimization terminated successfully.",
+  "nfev": 134,
+  "nit": 2,
+  "success": true,
+  "variables": [
+    "30",
+    "31",
+    "32"
+  ]
+}

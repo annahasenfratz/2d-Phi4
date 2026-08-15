@@ -1,0 +1,13 @@
+{
+  "NN_guardrail": "promotion-worthy requires NN KS <= 0.035; NN KS > 0.040 is rejected",
+  "base_kernel_sum_before_eta_scale": 0.9999999999999999,
+  "baseline": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/systematic_training/best_retrained_5x5_full_objective_eta_included.json",
+  "candidate_json": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_no33_nn_constrained/best_7x7_no33_nn_constrained_eta_included.json",
+  "candidate_txt": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_no33_nn_constrained/best_7x7_no33_nn_constrained_eta_included.txt",
+  "center_alpha": 0.35,
+  "final_kernel_sum_after_eta_scale": 1.0905077326652577,
+  "perturb_scale": 0.0006,
+  "previous_7x7": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/7x7_from_retrained_5x5/best_7x7_from_retrained_5x5_eta_included.json",
+  "selection": "best lambda=1.0 7x7 no-corner candidate with NN protected as a hard local-operator guardrail",
+  "source_candidate": "local_no33_alpha_0p35_0001"
+}

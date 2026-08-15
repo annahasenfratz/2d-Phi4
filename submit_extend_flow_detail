@@ -1,0 +1,340 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+###############################################################################
+# Lambda=1.0 checkpoint-based flow/detail extension submit script.
+#
+# Edit the parameter block below, then launch a background nohup extension with:
+#
+#   ./submit_extend_flow_detail
+#
+# This continues an existing lambda=1.0 patchwise run from:
+#
+#   <RUN_DIR>/checkpoints/checkpoint_latest.npz
+#
+# It uses the run's own run_config.yaml, including its recorded flow checkpoint,
+# kernel path, lattice sizes, patch geometry, and measurement cadence. It does
+# not use the old lambda=0.2 checkpoints_or_final_configs/configs_sweep*.npz
+# convention.
+#
+# You can also pass explicit arguments, for example:
+#
+#   ./submit_extend_flow_detail \
+#     --run-dir perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/coarse_detail_L16to32/prod_cd_bL32_RQS_cfg0_N1000_Pc16x1_Pd16x10_kf0p340301_kc0p340301 \
+#     --target-sweeps 600
+###############################################################################
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+###############################################################################
+# Edit parameters here.
+###############################################################################
+
+# Set this to an existing run directory, or pass --run-dir on the command line.
+# Shorthand run names are resolved under:
+#   perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/coarse_detail_L16to32/
+#   perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/coarse_detail_L32to64/
+#
+# Examples:
+# RUN_DIR="prod_cd_bL32_RQS_cfg2000_N500_Pc16x1_Pd16x16_kf0p340301_kc0p340301"
+# RUN_DIR="prod_cd_bL64_RQS_cfg2000_N500_Pc16x0_Pd16x10_kf0p340301_kc0p340301"
+RUN_DIR="${RUN_DIR:-}"
+
+# Total sweep count to reach. If the checkpoint has completed_sweeps=300 and
+# TARGET_SWEEPS=600, this appends sweeps 301..600.
+TARGET_SWEEPS="${TARGET_SWEEPS:-600}"
+
+# Normal use starts a background nohup job. Use DRY_RUN=1 to print and prepare
+# without launching. Set RUN_IN_NOHUP=0 for foreground debugging.
+RUN_IN_NOHUP="${RUN_IN_NOHUP:-1}"
+DRY_RUN="${DRY_RUN:-0}"
+
+# Present lambda=1 production coarse+detail runs use the two-stage coarse-action
+# update. Keep this guard on unless you intentionally want to extend an archived
+# old flat-update run.
+REQUIRE_PRESENT_SETUP="${REQUIRE_PRESENT_SETUP:-1}"
+ALLOW_OLD_FLAT_EXTENSION="${ALLOW_OLD_FLAT_EXTENSION:-0}"
+ALLOW_RUNNING_EXTENSION="${ALLOW_RUNNING_EXTENSION:-0}"
+
+###############################################################################
+
+if [[ -x "../../.venv/bin/python" ]]; then
+  PYTHON="../../.venv/bin/python"
+elif [[ -x ".venv/bin/python" ]]; then
+  PYTHON=".venv/bin/python"
+else
+  echo "Could not find shared Python at ../../.venv/bin/python or .venv/bin/python" >&2
+  exit 2
+fi
+
+resolve_run_dir() {
+  local candidate="${1%/}"
+  if [[ -d "$candidate" ]]; then
+    printf '%s\n' "$candidate"
+    return 0
+  fi
+
+  local base="perfect_blocking_upsampling/outputs/controlled_patch_lam1p0"
+  local name
+  name="$(basename "$candidate")"
+  local resolved=()
+  local d
+  for d in "$base"/coarse_detail_L16to32 "$base"/coarse_detail_L32to64; do
+    if [[ -d "$d/$name" ]]; then
+      resolved+=("$d/$name")
+    fi
+  done
+  if (( ${#resolved[@]} == 1 )); then
+    printf '%s\n' "${resolved[0]}"
+    return 0
+  fi
+  if (( ${#resolved[@]} > 1 )); then
+    printf 'RUN_DIR shorthand is ambiguous: %s\n' "$candidate" >&2
+    printf 'Matches:\n' >&2
+    printf '  %s\n' "${resolved[@]}" >&2
+    return 2
+  fi
+  printf '%s\n' "$candidate"
+}
+
+list_extendable_candidates() {
+  local base="perfect_blocking_upsampling/outputs/controlled_patch_lam1p0"
+  find "$base"/coarse_detail_L16to32 "$base"/coarse_detail_L32to64 \
+    -path '*/checkpoints/checkpoint_latest.npz' -print 2>/dev/null \
+    | sed 's#/checkpoints/checkpoint_latest.npz##' \
+    | grep -v '/quarantine' \
+    | sort
+}
+
+validate_run_for_extension() {
+  local run_dir="$1"
+  "$PYTHON" -B - "$run_dir" "$REQUIRE_PRESENT_SETUP" "$ALLOW_OLD_FLAT_EXTENSION" "$ALLOW_RUNNING_EXTENSION" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+try:
+    import yaml
+except ModuleNotFoundError as exc:
+    raise SystemExit(
+        "Missing Python dependency PyYAML. Run ./install_patch_run_python_deps.sh first."
+    ) from exc
+
+run_dir = Path(sys.argv[1])
+require_present = sys.argv[2] == "1"
+allow_old_flat = sys.argv[3] == "1"
+allow_running = sys.argv[4] == "1"
+
+cfg_path = run_dir / "run_config.yaml"
+status_path = run_dir / "status.json"
+with cfg_path.open("r", encoding="utf-8") as fh:
+    cfg = yaml.safe_load(fh) or {}
+status = {}
+if status_path.exists():
+    status = json.loads(status_path.read_text(encoding="utf-8"))
+
+patch = cfg.get("patch", {}) or {}
+scheme = patch.get("coarse_update_scheme")
+mode = cfg.get("mode", "")
+coarse_passes = int(patch.get("coarse_passes", 0) or 0)
+flow_checkpoint = Path(cfg.get("flow_checkpoint", ""))
+if flow_checkpoint and not flow_checkpoint.is_absolute():
+    flow_checkpoint = Path.cwd() / flow_checkpoint
+
+if not flow_checkpoint.exists():
+    raise SystemExit(f"Configured flow checkpoint is missing: {flow_checkpoint}")
+
+status_name = str(status.get("status", ""))
+if status_name == "running" and not allow_running:
+    raise SystemExit(
+        "status.json says this run is still running. Set ALLOW_RUNNING_EXTENSION=1 "
+        "only after confirming the original job is dead or intentionally paused."
+    )
+
+if require_present and coarse_passes > 0:
+    if scheme != "two_stage_coarse_action" and not allow_old_flat:
+        raise SystemExit(
+            "Refusing to extend a coarse+detail run that is not using "
+            f"two_stage_coarse_action (found {scheme!r}). Set "
+            "ALLOW_OLD_FLAT_EXTENSION=1 to override intentionally."
+        )
+
+print("Extension validation:")
+print(f"  mode={mode}")
+print(f"  coarse_passes={coarse_passes}")
+print(f"  coarse_update_scheme={scheme}")
+print(f"  status={status_name or 'unknown'}")
+print(f"  completed_sweeps={status.get('completed_sweeps', 'unknown')}")
+print(f"  flow_checkpoint={flow_checkpoint}")
+PY
+}
+
+EXPLICIT_ARGS=0
+for arg in "$@"; do
+  case "$arg" in
+    --run-dir|--run-dir=*|--target-sweeps|--target-sweeps=*|--execute|--dry-run)
+      EXPLICIT_ARGS=1
+      ;;
+  esac
+done
+
+if [[ "$EXPLICIT_ARGS" == "1" ]]; then
+  normalized_args=()
+  RUN_DIR_FROM_ARGS=""
+  TARGET_SWEEPS_FROM_ARGS=""
+  has_execute=0
+  has_dry_run=0
+  while (( $# > 0 )); do
+    case "$1" in
+      --run-dir)
+        if (( $# < 2 )); then
+          echo "--run-dir requires a value" >&2
+          exit 2
+        fi
+        RUN_DIR_FROM_ARGS="$(resolve_run_dir "$2")"
+        normalized_args+=(--run-dir "$RUN_DIR_FROM_ARGS")
+        shift 2
+        ;;
+      --run-dir=*)
+        RUN_DIR_FROM_ARGS="$(resolve_run_dir "${1#--run-dir=}")"
+        normalized_args+=(--run-dir "$RUN_DIR_FROM_ARGS")
+        shift
+        ;;
+      --target-sweeps)
+        if (( $# < 2 )); then
+          echo "--target-sweeps requires a value" >&2
+          exit 2
+        fi
+        TARGET_SWEEPS_FROM_ARGS="$2"
+        normalized_args+=(--target-sweeps "$TARGET_SWEEPS_FROM_ARGS")
+        shift 2
+        ;;
+      --target-sweeps=*)
+        TARGET_SWEEPS_FROM_ARGS="${1#--target-sweeps=}"
+        normalized_args+=(--target-sweeps "$TARGET_SWEEPS_FROM_ARGS")
+        shift
+        ;;
+      --execute)
+        has_execute=1
+        normalized_args+=("$1")
+        shift
+        ;;
+      --dry-run)
+        has_dry_run=1
+        DRY_RUN=1
+        shift
+        ;;
+      *)
+        normalized_args+=("$1")
+        shift
+        ;;
+    esac
+  done
+  cmd=("$PYTHON" -B perfect_blocking_upsampling/scripts/extend_flow_detail.py "${normalized_args[@]}")
+  if [[ "$has_execute" == "0" && "$has_dry_run" == "0" && "$DRY_RUN" != "1" ]]; then
+    cmd+=(--execute)
+  fi
+  [[ -n "$RUN_DIR_FROM_ARGS" ]] && RUN_DIR="$RUN_DIR_FROM_ARGS"
+  [[ -n "$TARGET_SWEEPS_FROM_ARGS" ]] && TARGET_SWEEPS="$TARGET_SWEEPS_FROM_ARGS"
+else
+  if [[ -z "$RUN_DIR" ]]; then
+    echo "RUN_DIR is empty. Edit submit_extend_flow_detail, set RUN_DIR=..., or pass --run-dir." >&2
+    echo "Extendable candidates with checkpoint_latest.npz:" >&2
+    list_extendable_candidates >&2 || true
+    exit 2
+  fi
+  if [[ -z "$TARGET_SWEEPS" ]]; then
+    echo "TARGET_SWEEPS is empty. Edit submit_extend_flow_detail and set TARGET_SWEEPS." >&2
+    exit 2
+  fi
+  if ! [[ "$TARGET_SWEEPS" =~ ^[0-9]+$ ]]; then
+    echo "TARGET_SWEEPS must be an integer without punctuation, got: $TARGET_SWEEPS" >&2
+    exit 2
+  fi
+  RUN_DIR="$(resolve_run_dir "$RUN_DIR")"
+  cmd=(
+    "$PYTHON" -B perfect_blocking_upsampling/scripts/extend_flow_detail.py
+    --run-dir "$RUN_DIR"
+    --target-sweeps "$TARGET_SWEEPS"
+  )
+  if [[ "$DRY_RUN" != "1" ]]; then
+    cmd+=(--execute)
+  fi
+fi
+
+RUN_DIR_FOR_LOG="$RUN_DIR"
+
+if [[ -z "$RUN_DIR_FOR_LOG" ]]; then
+  echo "Could not resolve RUN_DIR for logging. Pass --run-dir or edit RUN_DIR." >&2
+  exit 2
+fi
+if [[ ! -d "$RUN_DIR_FOR_LOG" ]]; then
+  echo "RUN_DIR does not exist: $RUN_DIR_FOR_LOG" >&2
+  exit 2
+fi
+if [[ ! -f "$RUN_DIR_FOR_LOG/run_config.yaml" ]]; then
+  echo "Missing run config: $RUN_DIR_FOR_LOG/run_config.yaml" >&2
+  exit 2
+fi
+if [[ ! -f "$RUN_DIR_FOR_LOG/checkpoints/checkpoint_latest.npz" ]]; then
+  echo "Missing latest checkpoint: $RUN_DIR_FOR_LOG/checkpoints/checkpoint_latest.npz" >&2
+  exit 2
+fi
+validate_run_for_extension "$RUN_DIR_FOR_LOG"
+
+mkdir -p "$RUN_DIR_FOR_LOG/logs" "$RUN_DIR_FOR_LOG/manifests"
+STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+LOG="$RUN_DIR_FOR_LOG/logs/submit_extend_flow_detail_${STAMP}.nohup.log"
+PID_FILE="$RUN_DIR_FOR_LOG/manifests/submit_extend_flow_detail_${STAMP}.pid"
+SUBMIT_MANIFEST="$RUN_DIR_FOR_LOG/manifests/submit_extend_flow_detail_${STAMP}_manifest.json"
+
+export RUN_DIR_FOR_LOG TARGET_SWEEPS RUN_IN_NOHUP DRY_RUN LOG PID_FILE
+"$PYTHON" -B - "$SUBMIT_MANIFEST" "${cmd[@]}" <<'PY'
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+path = Path(sys.argv[1])
+cmd = sys.argv[2:]
+payload = {
+    "submit_time_unix": time.time(),
+    "cwd": os.getcwd(),
+    "exact_launch_command": "./submit_extend_flow_detail",
+    "run_dir": os.environ["RUN_DIR_FOR_LOG"],
+    "target_sweeps": os.environ.get("TARGET_SWEEPS", ""),
+    "run_in_nohup": os.environ["RUN_IN_NOHUP"],
+    "dry_run": os.environ["DRY_RUN"],
+    "log": os.environ["LOG"],
+    "pid_file": os.environ["PID_FILE"],
+    "command": cmd,
+    "description": "Checkpoint-based lambda=1 flow/detail extension from checkpoints/checkpoint_latest.npz.",
+}
+path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+PY
+
+printf 'Submitting checkpoint-based flow/detail extension:\n'
+printf '  RUN_DIR=%s\n' "$RUN_DIR_FOR_LOG"
+printf '  LOG=%s\n' "$LOG"
+printf '  '
+printf '%q ' "${cmd[@]}"
+printf '\n'
+
+if [[ "$DRY_RUN" == "1" ]]; then
+  printf 'DRY_RUN=1: not invoking extension runner.\n'
+  exit 0
+fi
+
+if [[ "$RUN_IN_NOHUP" == "1" ]]; then
+  nohup "${cmd[@]}" > "$LOG" 2>&1 &
+  PID="$!"
+  printf '%s\n' "$PID" > "$PID_FILE"
+  printf 'Started background extension job:\n'
+  printf '  PID=%s\n' "$PID"
+  printf '  PID_FILE=%s\n' "$PID_FILE"
+  printf '  LOG=%s\n' "$LOG"
+else
+  "${cmd[@]}"
+fi

@@ -1,0 +1,22 @@
+{
+  "name": "colleague_paper_objective_5x5_eta_included",
+  "type": "matrix",
+  "eta": 0.25,
+  "scale_factor": 2,
+  "eta_scale": "2^0.125",
+  "eta_scale_numeric": 1.0905077326652577,
+  "kernel_coefficients_include_eta_scale": true,
+  "normalization": "eta_included_sum_to_eta_scale",
+  "convention": "stored coefficients include eta scale; do not multiply again on application",
+  "family": "colleague_paper_Eq21_conditioned",
+  "source_note": "Weights supplied by collaborator: Eq. 21 operator objective, D4 5x5, eta=0.25, conditioned inverse penalty in objective.",
+  "matrix": [
+    [-0.013853604, 0.044506276, 0.033415721, 0.044506276, -0.013853604],
+    [0.044506276, -0.041620029, -0.019955407, -0.041620029, 0.044506276],
+    [0.033415721, -0.019955407, 0.902510801, -0.019955407, 0.033415721],
+    [0.044506276, -0.041620029, -0.019955407, -0.041620029, 0.044506276],
+    [-0.013853604, 0.044506276, 0.033415721, 0.044506276, -0.013853604]
+  ],
+  "orbits": {"00": 0.902510801, "10": -0.019955407, "11": -0.041620029, "20": 0.033415721, "21": 0.044506276, "22": -0.013853604},
+  "final_kernel_sum_after_eta_scale": 1.0905077326652577
+}

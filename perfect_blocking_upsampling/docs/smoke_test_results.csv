@@ -1,0 +1,2 @@
+test,passed,details
+new_empirical_submit_smoke,True,sweeps=3; reblocking=1.1920928955078125e-07; nonfinite=0

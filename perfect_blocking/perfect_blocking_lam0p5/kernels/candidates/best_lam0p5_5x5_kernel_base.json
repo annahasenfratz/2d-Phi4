@@ -1,0 +1,116 @@
+{
+  "descriptive_name": "refined_rand0084_0001_4_22_p",
+  "eta": 0.25,
+  "kappa": 0.3426,
+  "lambda": 0.5,
+  "matrix_offsets_minus2_to_2": [
+    [
+      0.0017047446953779646,
+      0.04053984084822726,
+      0.052146817935674696,
+      0.04053984084822726,
+      0.0017047446953779646
+    ],
+    [
+      0.04053984084822726,
+      -0.0830142962200493,
+      -0.010960946861589611,
+      -0.0830142962200493,
+      0.04053984084822726
+    ],
+    [
+      0.052146817935674696,
+      -0.010960946861589611,
+      0.836175995016527,
+      -0.010960946861589611,
+      0.052146817935674696
+    ],
+    [
+      0.04053984084822726,
+      -0.0830142962200493,
+      -0.010960946861589611,
+      -0.0830142962200493,
+      0.04053984084822726
+    ],
+    [
+      0.0017047446953779646,
+      0.04053984084822726,
+      0.052146817935674696,
+      0.04053984084822726,
+      0.0017047446953779646
+    ]
+  ],
+  "name": "best_lam0p5_5x5_kernel",
+  "normalization": "sum_to_one",
+  "objective_metrics": {
+    "accepted_conditioning": true,
+    "all_sublattice_2nn": 0.5449646535060875,
+    "all_sublattice_NN": 0.641270376058861,
+    "all_sublattice_action_density": -0.188620445052592,
+    "all_sublattice_delta_2nn": 0.011972617995318346,
+    "all_sublattice_delta_NN": 0.00022986272564462507,
+    "all_sublattice_delta_action_density": 0.0006440683420007587,
+    "all_sublattice_delta_diag": 0.0022208823723928184,
+    "all_sublattice_delta_phi2": 0.004918599140155355,
+    "all_sublattice_delta_phi4": 0.0019181444424483107,
+    "all_sublattice_diag": 0.580991314988961,
+    "all_sublattice_phi2": 0.9054260367675684,
+    "all_sublattice_phi4": 1.3803529565969421,
+    "candidate": "refined_rand0084_0001_4_22_p",
+    "coarse_condition": 1.8566188391659975,
+    "coarse_max_abs_K": 1.0905077326652575,
+    "coarse_min_abs_K": 0.5873622036255536,
+    "conditioning_penalty": 0.0,
+    "cov_objective": 64.0469386443167,
+    "cov_objective_diag_fallback": false,
+    "family": "coordinate_refined_5x5",
+    "full_bz_condition": 3.1514384422845176,
+    "full_bz_max_abs_K": 1.508869498094583,
+    "full_bz_min_abs_K": 0.4787875523282582,
+    "low_action_and_high_2nn_direct": 0.1978,
+    "low_action_and_high_2nn_ratio": 1.2224969097651421,
+    "low_action_and_high_2nn_ref": 0.1618,
+    "low_action_and_high_NN_direct": 0.1864,
+    "low_action_and_high_NN_ratio": 1.2025806451612904,
+    "low_action_and_high_NN_ref": 0.155,
+    "low_action_and_high_diag_direct": 0.1882,
+    "low_action_and_high_diag_ratio": 1.1777221526908637,
+    "low_action_and_high_diag_ref": 0.1598,
+    "low_action_direct": 0.2788,
+    "low_action_ratio": 1.1152,
+    "low_action_ref": 0.25,
+    "max_abs_z_primary": 2.6941438163853357,
+    "mean_z_rms": 2.1050042768869375,
+    "orbits_json": "{\"00\": 0.836175995016527, \"10\": -0.010960946861589611, \"11\": -0.0830142962200493, \"20\": 0.052146817935674696, \"21\": 0.04053984084822726, \"22\": 0.0017047446953779646}",
+    "quantile_rms": 0.09309541662131522,
+    "rms_z_primary": 1.4067475069759354,
+    "score": 2.4254406070414483,
+    "smooth_sector_penalty": 0.23139942086104948,
+    "source": "coordinate refine from rand0084_0001"
+  },
+  "orbits": {
+    "00": 0.836175995016527,
+    "10": -0.010960946861589611,
+    "11": -0.0830142962200493,
+    "20": 0.052146817935674696,
+    "21": 0.04053984084822726,
+    "22": 0.0017047446953779646
+  },
+  "provenance": {
+    "script": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking_upsampling/outputs/lam0p5_5x5_kernel_search/scripts/run_lam0p5_5x5_kernel_search.py",
+    "source": "coordinate refine from rand0084_0001",
+    "source_candidate": "refined_rand0084_0001_4_22_p",
+    "source_family": "coordinate_refined_5x5"
+  },
+  "roundtrip_metrics": {
+    "condition_number_abs": 3.1514384422845163,
+    "max_abs_Keta_tilde": 1.5088694980945823,
+    "max_inverse_ifft_imag": 4.953138662688079e-16,
+    "min_abs_Keta_tilde": 0.47878755232825815,
+    "reblocking_psi_max_abs_error": 1.1920928955078125e-07,
+    "roundtrip_phi_max_abs_error": 2.384185791015625e-07
+  },
+  "scale_factor": 2,
+  "sha256_without_checksum_field": "c1ae092184077c2b83af3dec6ea49cc8a9193a1cfcff82564735ca3e48ac9a3e",
+  "type": "orbit_kernel"
+}

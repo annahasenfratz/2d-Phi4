@@ -1,0 +1,84 @@
+lambda: 1.0
+kappa_f: 0.340301
+kappa_c: 0.340301
+eta_convention: "eta is included in the selected blocking kernel; do not multiply by eta separately"
+L_c: 16
+L_f: 32
+block_factor: 2
+
+mode: matched_pair_rqspline_finetune_regularized_branch
+description: >
+  Prepared branch from the exactly replayed epoch-5 state of
+  lam1p0_L16to32_kf0p340301_kc0p340301_7x7_autoregressive_8layer48_rqspline_finetune_from_L8to16_20260717T205352Z.
+  This branch strengthens short-distance observable regularization to control
+  the phi4 drift seen by epoch 10. This file is preparation only; it has not
+  been launched.
+
+source_checkpoint: perfect_blocking_upsampling/runs/lam1p0/training/recovery_epoch5_from_20260717T205352Z_20260717T235000Z/checkpoints/checkpoint_epoch005.pt
+fine_config_source: data/configs_phi4_2d/lam1p0_kappac0p340301_L32/configs.npz
+kernel_path: perfect_blocking/perfect_blocking_lam1p0/kernels/selected_for_upscaling/best_7x7_phi2_nn_guarded_eta_included.json
+kernel_coefficients_include_eta_scale: true
+
+architecture:
+  factorization: "q(d01|coarse) q(d10|coarse,d01) q(d11|coarse,d01,d10)"
+  layers_per_stage: 8
+  hidden_channels: 48
+  conv_kernel_size: 3
+  spline:
+    num_bins: 8
+    tail_bound: 6.0
+    min_bin_width: 0.001
+    min_bin_height: 0.001
+    min_derivative: 0.001
+    tails: linear
+
+training:
+  learning_rate: 5.0e-5
+  batch_size: 128
+  epochs_initial: 5
+  eval_every: 1
+  stop_after_eval_epoch: 5
+  train_count: 4000
+  val_count: 500
+  test_count: 500
+  random_seed: 2026071721
+  grad_clip: 10.0
+  weight_decay: 1.0e-5
+
+observable_weights:
+  action_density: 0.09
+  phi4: 0.12
+  local_kurtosis_ratio: 0.12
+  NN: 0.06
+  phi2: 0.015
+  2nn: 0.01
+  diag: 0.01
+  G_pmin_avg: 0.002
+
+diagnostics:
+  intermediate:
+    global_chains: 32
+    global_sweeps: 50
+    local_chains: 32
+    local_sweeps: 25
+  branch_epoch5_full_comparison:
+    global_chains: 64
+    global_sweeps: 100
+    local_chains: 64
+    local_sweeps: 25
+  local_detail_patch_size: 16
+  local_detail_passes: 10
+  local_fine_proposal_sigma: 0.04
+
+proposed_command: >
+  ../.venv/bin/python -B perfect_blocking_upsampling/scripts/train_lam1p0_l16to32_rqspline_finetune.py
+  --run-dir perfect_blocking_upsampling/runs/lam1p0/training/lam1p0_L16to32_kf0p340301_kc0p340301_7x7_rqspline_phi4_guarded_branch_from_recovered_ep5_<timestamp>
+  --source-checkpoint perfect_blocking_upsampling/runs/lam1p0/training/recovery_epoch5_from_20260717T205352Z_20260717T235000Z/checkpoints/checkpoint_epoch005.pt
+  --epochs 5
+  --eval-every 1
+  --stop-after-eval-epoch 5
+  --global-chains 32
+  --global-sweeps 50
+  --local-chains 32
+  --local-sweeps 25
+  --obs-weights action_density=0.09,phi4=0.12,local_kurtosis_ratio=0.12,NN=0.06,phi2=0.015,2nn=0.01,diag=0.01,G_pmin_avg=0.002

@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Direct global independence-MH reference for the wrapped lambda=1 L8 -> L16 flow.
+# Edit these variables; use --execute to run and --background for nohup.
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+PYTHON="$REPO_ROOT/../.venv/bin/python"
+DRIVER="$REPO_ROOT/perfect_blocking_upsampling/scripts/run_lam1p0_mit_style_inverse_blocking_L8to16.py"
+
+LAMBDA="1.0"
+KAPPA_C="0.340301"
+KAPPA_F="0.340301"
+LC="8"
+LF="16"
+
+# Use the final eta-included 5x5 kernel and the matching wrapped 5x5 flow used
+# in coarse-detail production. The procedural flow is instantiated at L8 here.
+KERNEL_PATH="$REPO_ROOT/perfect_blocking/perfect_blocking_lam1p0/kernels/final/chosen_kernel.json"
+FLOW_CHECKPOINT="$REPO_ROOT/perfect_blocking_upsampling/runs/lam1p0/training/lam1p0_L16to32_newkernel_rqspline_N2000_action_lowtail_from_N2000_bestpatch_20260719T171401Z/checkpoints/checkpoint_best_patch.pt"
+
+# q_c is exp[-S_c] represented by iid native-action L8 configurations. Initial
+# L16 states are blocked native fields, so sweep 0 is a stationarity control.
+COARSE_PROPOSAL_SOURCE="$REPO_ROOT/data/configs_phi4_2d/lam1p0_kappac0p340301_L8/configs.npz"
+NATIVE_L16_SOURCE="$REPO_ROOT/data/configs_phi4_2d/lam1p0_kappac0p340301_L16/configs.npz"
+
+N_CHAINS="128"
+N_SWEEPS="400"
+SAVE_SWEEPS="$(seq -s, 0 5 400)"
+BATCH_SIZE="64"
+SEED="2026072201"
+DEVICE="cpu"
+OUTPUT_ROOT="$REPO_ROOT/perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/mit_style_inverse_blocking_L8to16"
+RUN_LABEL="wrappedFlow_final5x5_directMIT_blockedNativeInit"
+
+EXECUTE=0
+BACKGROUND=0
+if [[ "${1:-}" == "--execute" ]]; then EXECUTE=1; shift; fi
+if [[ "${1:-}" == "--background" ]]; then BACKGROUND=1; shift; fi
+if [[ "$#" -ne 0 ]]; then
+  printf 'usage: %s [--execute] [--background]\n' "$0" >&2
+  exit 2
+fi
+
+for required in "$PYTHON" "$DRIVER" "$KERNEL_PATH" "$FLOW_CHECKPOINT" "$COARSE_PROPOSAL_SOURCE" "$NATIVE_L16_SOURCE"; do
+  [[ -e "$required" ]] || { printf 'missing required path: %s\n' "$required" >&2; exit 1; }
+done
+
+STAMP="$(date +%Y%m%dT%H%M%SZ)"
+RUN_ID="mit_L${LC}to${LF}_lam${LAMBDA/./p}_${RUN_LABEL}_N${N_CHAINS}_S${N_SWEEPS}_${STAMP}"
+RUN_DIR="$OUTPUT_ROOT/$RUN_ID"
+CMD=("$PYTHON" -B "$DRIVER" --run-dir "$RUN_DIR" --coarse-proposal-source "$COARSE_PROPOSAL_SOURCE" --native-reference-source "$NATIVE_L16_SOURCE" --flow-checkpoint "$FLOW_CHECKPOINT" --kernel-path "$KERNEL_PATH" --n-chains "$N_CHAINS" --n-sweeps "$N_SWEEPS" --save-sweeps "$SAVE_SWEEPS" --batch-size "$BATCH_SIZE" --seed "$SEED" --device "$DEVICE")
+
+printf 'run directory: %s\n' "$RUN_DIR"
+printf 'command: '
+printf '%q ' "${CMD[@]}"
+printf '\n'
+if [[ "$EXECUTE" -eq 0 ]]; then
+  printf 'Prepared only. Re-run with --execute to start; add --background for nohup.\n'
+  exit 0
+fi
+
+mkdir -p "$RUN_DIR/logs"
+{
+  printf 'run_id=%s\n' "$RUN_ID"
+  printf 'lambda=%s kappa_c=%s kappa_f=%s Lc=%s Lf=%s\n' "$LAMBDA" "$KAPPA_C" "$KAPPA_F" "$LC" "$LF"
+  printf 'command='
+  printf '%q ' "${CMD[@]}"
+  printf '\n'
+} > "$RUN_DIR/submit_manifest.txt"
+if [[ "$BACKGROUND" -eq 1 ]]; then
+  nohup "${CMD[@]}" > "$RUN_DIR/logs/run.log" 2>&1 &
+  printf '%s\n' "$!" > "$RUN_DIR/submit_pid.txt"
+  printf 'started background PID %s\n' "$!"
+else
+  exec "${CMD[@]}"
+fi

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/../.."&&pwd)";PY="$ROOT/../../.venv/bin/python";OUT="$ROOT/perfect_blocking_upsampling/outputs/global_ar_lam1p0/softcond7_frozen_flow_kernel_sensitivity";E=0;B=0;for x in "$@";do case "$x" in --execute)E=1;;--background)B=1;;*)exit 2;;esac;done;CMD=("$PY" -B "$ROOT/perfect_blocking_upsampling/scripts/scan_lam1p0_softcond7_kernel_sensitivity.py" --out "$OUT");printf 'out=%s\n' "$OUT";[[ $E -eq 1 ]]||exit 0;mkdir -p "$OUT/logs";if [[ $B -eq 1 ]];then nohup "${CMD[@]}">"$OUT/logs/run.log" 2>&1 </dev/null & echo $! >"$OUT/submit_pid.txt";echo "background_pid=$!";else exec "${CMD[@]}";fi

@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# Diagnostic factor-two four-substep wrapped-flow MH test. This script prepares
+# a run unless --execute is supplied; it never launches a long run by default.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+# Edit this block for a modest diagnostic run.
+N_CHAINS="${N_CHAINS:-250}"
+N_SWEEPS="${N_SWEEPS:-100}"
+SAVE_SWEEPS="${SAVE_SWEEPS:-$(seq -s, 0 1 100)}"
+BATCH_SIZE="${BATCH_SIZE:-32}"
+SEED="${SEED:-2026072904}"
+DEVICE="${DEVICE:-cpu}"
+LC="${LC:-32}"
+LF="${LF:-64}"
+INITIAL_START_INDEX="${INITIAL_START_INDEX:-0}"
+INITIALIZATION_MODE="${INITIALIZATION_MODE:-direct_coarse_flow}" # or blocked_native
+COARSE_UPDATE_MODE="${COARSE_UPDATE_MODE:-coarse_mh_kernel}"
+COARSE_SIGMA="${COARSE_SIGMA:-0.3}"
+COARSE_UPDATES_PER_SWEEP="${COARSE_UPDATES_PER_SWEEP:-1}"
+DIVIDE="${DIVIDE:-2}"  # only 1 or 2 for now
+COARSE_SOURCE_START_INDEX="${COARSE_SOURCE_START_INDEX:-1000}"
+COARSE_SOURCE_COUNT="${COARSE_SOURCE_COUNT:-}"
+KERNEL_PATH="${KERNEL_PATH:-perfect_blocking/perfect_blocking_lam1p0/kernels/final/chosen_kernel.json}"
+FLOW_CHECKPOINT="${FLOW_CHECKPOINT:-perfect_blocking_upsampling/runs/lam1p0/training/lam1p0_L16to32_newkernel_rqspline_N2000_action_lowtail_from_N2000_bestpatch_20260719T171401Z/checkpoints/checkpoint_best_patch.pt}"
+COARSE_SOURCE="${COARSE_SOURCE:-auto}"
+NATIVE_SOURCE="${NATIVE_SOURCE:-auto}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-auto}"
+RUN_LABEL="${RUN_LABEL:-auto}"
+
+EXECUTE=0
+BACKGROUND=0
+for arg in "$@"; do
+  case "$arg" in
+    --execute) EXECUTE=1 ;;
+    --background) BACKGROUND=1 ;;
+    *) printf 'usage: %s [--execute] [--background]\n' "$0" >&2; exit 2 ;;
+  esac
+done
+
+PYTHON="../../.venv/bin/python"
+DRIVER="perfect_blocking_upsampling/scripts/run_lam1p0_mit_four_substep_L8to16.py"
+if [[ "$LC" == "8" && "$LF" == "16" ]]; then
+  DEFAULT_COARSE="data/configs_phi4_2d/lam1p0_kappac0p340301_L8/configs.npz"
+  DEFAULT_FINE="data/configs_phi4_2d/lam1p0_kappac0p340301_L16/configs.npz"
+elif [[ "$LC" == "16" && "$LF" == "32" ]]; then
+  DEFAULT_COARSE="data/configs_phi4_2d/lam1p0_kappac0p340301_L16/configs.npz"
+  DEFAULT_FINE="data/configs_phi4_2d/lam1p0_kappac0p340301_L32/configs.npz"
+elif [[ "$LC" == "32" && "$LF" == "64" ]]; then
+  DEFAULT_COARSE="data/configs_phi4_2d/lam1p0_kappac0p340301_L32/configs.npz"
+  DEFAULT_FINE="data/configs_phi4_2d/lam1p0_kappac0p340301_L64/configs.npz"
+else
+  printf 'supported four-substep pairs: L8->L16, L16->L32, and L32->L64; got L%s->L%s\n' "$LC" "$LF" >&2
+  exit 2
+fi
+[[ "$COARSE_SOURCE" == "auto" ]] && COARSE_SOURCE="$DEFAULT_COARSE"
+[[ "$NATIVE_SOURCE" == "auto" ]] && NATIVE_SOURCE="$DEFAULT_FINE"
+[[ "$OUTPUT_ROOT" == "auto" ]] && OUTPUT_ROOT="perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/mit_style_four_substep_L${LC}to${LF}"
+if [[ "$RUN_LABEL" == "auto" ]]; then
+  if [[ "$INITIALIZATION_MODE" == "blocked_native" ]]; then
+    RUN_LABEL="wrappedFlow_final5x5_fourSubstep_coarseMH_div${DIVIDE}_blockedNativeInit"
+  elif [[ "$INITIALIZATION_MODE" == "direct_coarse_flow" ]]; then
+    RUN_LABEL="wrappedFlow_final5x5_fourSubstep_coarseMH_div${DIVIDE}_directNativeCoarseFlowInit"
+  else
+    printf 'unsupported INITIALIZATION_MODE: %s\n' "$INITIALIZATION_MODE" >&2
+    exit 2
+  fi
+fi
+for required in "$PYTHON" "$DRIVER" "$KERNEL_PATH" "$FLOW_CHECKPOINT" "$COARSE_SOURCE" "$NATIVE_SOURCE"; do
+  [[ -e "$required" ]] || { printf 'missing required path: %s\n' "$required" >&2; exit 1; }
+done
+
+STAMP="$(date +%Y%m%dT%H%M%SZ)"
+RUN_ID="mit4_bL${LF}_wrapped_RQS_cfg${INITIAL_START_INDEX}_N${N_CHAINS}_S${N_SWEEPS}_${RUN_LABEL}_${STAMP}"
+RUN_DIR="$OUTPUT_ROOT/$RUN_ID"
+CMD=("$PYTHON" -B "$DRIVER" --run-dir "$RUN_DIR" --coarse-proposal-source "$COARSE_SOURCE" --native-reference-source "$NATIVE_SOURCE" --flow-checkpoint "$FLOW_CHECKPOINT" --kernel-path "$KERNEL_PATH" --from-L "$LC" --to-L "$LF" --n-chains "$N_CHAINS" --n-sweeps "$N_SWEEPS" --save-sweeps "$SAVE_SWEEPS" --batch-size "$BATCH_SIZE" --seed "$SEED" --device "$DEVICE" --initial-start-index "$INITIAL_START_INDEX" --initialization "$INITIALIZATION_MODE" --coarse-update-mode "$COARSE_UPDATE_MODE" --coarse-sigma "$COARSE_SIGMA" --coarse-updates-per-sweep "$COARSE_UPDATES_PER_SWEEP" --divide "$DIVIDE" --coarse-source-start-index "$COARSE_SOURCE_START_INDEX")
+if [[ -n "$COARSE_SOURCE_COUNT" ]]; then CMD+=(--coarse-source-count "$COARSE_SOURCE_COUNT"); fi
+
+printf 'run directory: %s\ncommand: ' "$RUN_DIR"
+printf '%q ' "${CMD[@]}"
+printf '\n'
+if [[ "$EXECUTE" == 0 ]]; then
+  printf 'Prepared only; add --execute to run.\n'
+  exit 0
+fi
+
+mkdir -p "$RUN_DIR/logs"
+printf 'command=' > "$RUN_DIR/submit_manifest.txt"
+printf '%q ' "${CMD[@]}" >> "$RUN_DIR/submit_manifest.txt"
+printf '\n' >> "$RUN_DIR/submit_manifest.txt"
+if [[ "$BACKGROUND" == 1 ]]; then
+  nohup "${CMD[@]}" > "$RUN_DIR/logs/run.log" 2>&1 &
+  printf '%s\n' "$!" > "$RUN_DIR/submit_pid.txt"
+  printf 'started background PID %s\n' "$!"
+else
+  exec "${CMD[@]}"
+fi

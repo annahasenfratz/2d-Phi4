@@ -1,0 +1,39 @@
+{
+  "created": "2026-06-24",
+  "experiment": "heidelberg_native_kappa0p295_to_16",
+  "status": "inspection_only",
+  "read_only_reference": "heidelberg-phi4-reproduction/",
+  "native_coarse_input": "InverseBlocking_MIT_NF/outputs/coarse_distribution_calibration/generated_native_wolff/native_coarse_lam1_kappa0p295_L8_wolff.npy",
+  "native_coarse_metadata_caveat": "Existing kappa=0.295 ensemble was generated with embedded Wolff sign-cluster plus local Metropolis amplitude updates, not the newer Wolff-only standing rule.",
+  "do_not_overwrite": [
+    "heidelberg-phi4-reproduction/outputs/"
+  ],
+  "new_branch_directory": "InverseBlocking_MIT_NF/experiments/heidelberg_native_kappa0p295_to_16/",
+  "candidate_reuse": {
+    "base_helpers": [
+      "heidelberg-phi4-reproduction/heidelberg_phi4/cnf_architecture.py",
+      "heidelberg-phi4-reproduction/heidelberg_phi4/conventions.py",
+      "heidelberg-phi4-reproduction/heidelberg_phi4/observables.py"
+    ],
+    "primary_trainer_to_adapt": "heidelberg-phi4-reproduction/scripts/train_ir_matching_l8_torch_cnf.py",
+    "optional_tunable_target_kappa_trainer": "heidelberg-phi4-reproduction/scripts/train_uv_matching_l8_torch_target_kappa.py"
+  },
+  "proposed_first_pilot": {
+    "lambda_c": 1.0,
+    "kappa_c": 0.295,
+    "lambda_f": 1.0,
+    "kappa_f_initial": 0.32,
+    "coarse_L": 8,
+    "target_L": 16,
+    "sigma_scan": [
+      0.1,
+      0.15,
+      0.2,
+      0.3
+    ],
+    "initialization": "simple 2x2 block repeat plus zero-sum Gaussian block noise",
+    "simple_block_average_preserved": true,
+    "symmetric_Bsym_preserved": false
+  }
+}
+

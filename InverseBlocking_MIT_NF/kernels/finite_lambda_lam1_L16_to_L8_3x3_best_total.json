@@ -1,0 +1,27 @@
+{
+  "name": "finite_lambda_lam1_L16_to_L8_3x3_best_total",
+  "eps": 1e-08,
+  "normalization": "Only the unit-sum normalization is fixed exactly. Listed shell weights are approximate working values; the dependent corner/diagonal shell is adjusted to make the stencil sum exactly 1.",
+  "provenance": {
+    "lambda": "1.0",
+    "kappa": "approximately 0.3401 / near-critical",
+    "eta": "1/4",
+    "N_eta": "2^(1/8)",
+    "source": "Finite lambda blocking chat recovered context",
+    "weights_parameterization": "w00\u22480.48, w10\u22480.21, w11\u2248-0.08",
+    "precision_policy": "Do not treat digits as statistically significant; these are starting values, not quoted fit errors."
+  },
+  "weights": {
+    "-1,-1": -0.07999999999999999,
+    "-1,0": 0.21,
+    "-1,1": -0.07999999999999999,
+    "0,-1": 0.21,
+    "0,0": 0.48,
+    "0,1": 0.21,
+    "1,-1": -0.07999999999999999,
+    "1,0": 0.21,
+    "1,1": -0.07999999999999999
+  },
+  "sum_weights": 1.0,
+  "notes": "Best-total 3x3 kernel shape from finite-lambda L16->L8 scan. Values are approximate working values; w11 is computed from exact unit normalization."
+}

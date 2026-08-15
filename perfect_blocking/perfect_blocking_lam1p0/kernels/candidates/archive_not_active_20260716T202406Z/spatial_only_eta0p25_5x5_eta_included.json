@@ -1,0 +1,45 @@
+{
+  "base_kernel_name": "best_spatial_only_eta0p25_5x5_KL",
+  "base_kernel_sum_before_eta_scale": 1.0,
+  "base_orbits_before_eta_scale": {
+    "00": 0.7833496919729274,
+    "10": 0.027986023500293004,
+    "11": 0.014144504958094738,
+    "20": 0.01451170061242356,
+    "21": 0.002295030848553372,
+    "22": -0.007069713761149906
+  },
+  "block_factor": 2,
+  "convention": "stored coefficients include eta_scale; do not multiply again on application",
+  "eta": 0.25,
+  "eta_scale": "2^0.125",
+  "eta_scale_numeric": 1.0905077326652577,
+  "final_kernel_sum_after_eta_scale": 1.0905077326652577,
+  "kappa_c": 0.340301,
+  "kappa_f": 0.340301,
+  "kernel_coefficients_include_eta_scale": true,
+  "lambda": 1.0,
+  "name": "spatial_only_eta0p25_5x5_eta_included",
+  "normalization": "eta_included_sum_to_eta_scale",
+  "objective_metrics": {
+    "old_D_op": 7.293097,
+    "old_expanded_total_score": 2.069406,
+    "old_ir_score": 0.82579
+  },
+  "orbits": {
+    "00": 0.8542488964774251,
+    "10": 0.03051897503362114,
+    "11": 0.015424692031524388,
+    "20": 0.015825121731971047,
+    "21": 0.00250274888705276,
+    "22": -0.007709577524263956
+  },
+  "provenance": {
+    "note": "eta-included operational copy generated for lam1p0 validation"
+  },
+  "scale_factor": 2,
+  "selection_reason": "nearby spatial-only eta=0.25 5x5 alternative from old scan; validate on current kappa_cr=0.340301",
+  "source": "InverseBlocking_MIT_NF/kernels/from_perfect_blocking_lam1p0/perfect_block_lam1_kernel5x5_KL_etafit_L32_to_L16_summary.json",
+  "source_candidate_kappa": 0.34008,
+  "type": "orbit_kernel"
+}

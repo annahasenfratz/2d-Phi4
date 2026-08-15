@@ -1,0 +1,10 @@
+[project]
+name = "invblock-mit-nf"
+version = "0.1.0"
+description = "MIT-style phi4 normalizing flows for finite-lambda inverse blocking"
+requires-python = ">=3.10"
+dependencies = ["torch", "numpy", "pyyaml", "matplotlib", "tqdm"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

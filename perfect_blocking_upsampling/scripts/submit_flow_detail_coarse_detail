@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+if [[ "${1:-}" == "--preset" ]]; then
+  case "${2:-}" in
+    lam1p0_L16to32_balanced|lam1p0_L16to32_newkernel)
+      shift 2
+      exec ../../.venv/bin/python -B perfect_blocking_upsampling/scripts/run_flow_detail_coarse_detail.py \
+        --config perfect_blocking_upsampling/run_configs/lam1p0_L16to32_rqspline_balanced_coarse_detail_production.yaml "$@"
+      ;;
+    lam1p0_L32to64_newkernel|lam1p0_L32to64_RQS)
+      shift 2
+      exec ../../.venv/bin/python -B perfect_blocking_upsampling/scripts/run_flow_detail_coarse_detail.py \
+        --config perfect_blocking_upsampling/run_configs/lam1p0_L32to64_rqspline_newkernel_coarse_detail_production.yaml "$@"
+      ;;
+    *)
+      printf 'unknown submit_flow_detail_coarse_detail preset: %s\n' "${2:-}" >&2
+      exit 2
+      ;;
+  esac
+fi
+exec ../../.venv/bin/python -B perfect_blocking_upsampling/scripts/run_flow_detail_coarse_detail.py "$@"

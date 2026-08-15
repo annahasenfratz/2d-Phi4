@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+  cat >&2 <<'EOF'
+Usage:
+  ./analyze_binder_bins ENSEMBLE_NAME_OR_PATH [extra args]
+
+Examples:
+  ./analyze_binder_bins lam0p2_kappac0p322500_L32
+  BIN=250 ./analyze_binder_bins lam0p2_kappac0p323124_L16
+  BIN=500 ./analyze_binder_bins lam0p2_kappac0p323124_L16 --drop-partial
+EOF
+  exit 2
+fi
+
+ENSEMBLE_INPUT="$1"
+shift
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+if [[ -x "../../.venv/bin/python" ]]; then
+  PYTHON="../../.venv/bin/python"
+elif [[ -x ".venv/bin/python" ]]; then
+  PYTHON=".venv/bin/python"
+else
+  echo "ERROR: could not find ../../.venv/bin/python or .venv/bin/python" >&2
+  exit 2
+fi
+
+BIN="${BIN:-250}"
+COARSE_ROOT="perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/L16to32_exact_direct_L16_kappac_scan/coarse_ensembles"
+
+if [[ -e "$ENSEMBLE_INPUT" ]]; then
+  ENSEMBLE_PATH="$ENSEMBLE_INPUT"
+elif [[ -e "$COARSE_ROOT/$ENSEMBLE_INPUT" ]]; then
+  ENSEMBLE_PATH="$COARSE_ROOT/$ENSEMBLE_INPUT"
+else
+  echo "ERROR: could not find ensemble: $ENSEMBLE_INPUT" >&2
+  echo "Looked for:" >&2
+  echo "  $ENSEMBLE_INPUT" >&2
+  echo "  $COARSE_ROOT/$ENSEMBLE_INPUT" >&2
+  exit 2
+fi
+
+LABEL="$(basename "$ENSEMBLE_PATH")"
+exec "$PYTHON" -B perfect_blocking_upsampling/scripts/binned_binder_cumulant.py \
+  "$ENSEMBLE_PATH" \
+  --label "$LABEL" \
+  --bin "$BIN" \
+  "$@"

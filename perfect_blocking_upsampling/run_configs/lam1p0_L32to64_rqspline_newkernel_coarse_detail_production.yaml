@@ -1,0 +1,89 @@
+lambda: 1.0
+kappa_f: 0.340301
+kappa_c: 0.340301
+eta: 0.25
+eta_scale: 2^0.125
+eta_scale_numeric: 1.0905077326652577
+L_c: 32
+L_f: 64
+block_factor: 2
+
+fine_config_source: data/configs_phi4_2d/lam1p0_kappac0p340301_L64/configs.npz
+reference_config_source: data/configs_phi4_2d/lam1p0_kappac0p340301_L64/configs.npz
+coarse_config_source: data/configs_phi4_2d/lam1p0_kappac0p340301_L32/configs.npz
+native_reference_source: data/configs_phi4_2d/lam1p0_kappac0p340301_L64/configs.npz
+
+kernel_path: perfect_blocking/perfect_blocking_lam1p0/kernels/final/chosen_kernel.json
+kernel_coefficients_include_eta_scale: true
+
+flow_type: rqspline
+flow_checkpoint: perfect_blocking_upsampling/runs/lam1p0/training/lam1p0_L16to32_current5x5_tailstratified_proposal_coverage_N5000_20260803T160559Z/checkpoints/checkpoint_epoch002.pt
+flow_selection_metadata: perfect_blocking_upsampling/docs/lam1p0_perfect_blocking_handoff_20260803.md
+flow_architecture:
+  autoregressive_stages:
+    - d01_given_coarse
+    - d10_given_coarse_d01
+    - d11_given_coarse_d01_d10
+  coupling_layers: 8
+  hidden_channels: 48
+  conv_kernel_size: 3
+  parameter_count: 2319576
+  transform: rational_quadratic_spline
+  spline:
+    num_bins: 8
+    tail_bound: 6.0
+    min_bin_width: 0.001
+    min_bin_height: 0.001
+    min_derivative: 0.001
+    tails: linear
+
+selection:
+  selected_utc: 2026-08-03
+  selected_epoch: 2
+  canonical_highstat_diagnostic: perfect_blocking_upsampling/runs/lam1p0/upscaling/raw_L16toL32_current5x5_tailstratified_proposal_coverage_epoch002_N5000_20260803T162000Z
+  L32to64_zero_shot_diagnostic: perfect_blocking_upsampling/runs/lam1p0/upscaling/raw_L32toL64_current5x5_tailstratified_proposal_coverage_epoch002_N5000_20260803T164638Z
+  rationale: handoff-selected epoch-2 5x5 flow; retained as the primary L32-to-L64 proposal because later L64-specific fine-tuning degraded the held-out local-observable histograms
+
+mode: patchwise_coarse_detail
+initialization_mode: flow_sample
+initializer_type: learned_rqspline_flow
+run_id_style: controlled_patch
+legacy_runner: perfect_blocking_upsampling/scripts/run_lam1p0_rqspline_patchwise.py
+legacy_extend_runner: perfect_blocking_upsampling/scripts/run_lam1p0_rqspline_patchwise.py
+output_root: perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/coarse_detail_L32to64
+
+patch:
+  update_mode: coarse_detail
+  proposal: local_coarse_patch_plus_local_symmetric_fine_detail_patch
+  random_origin: true
+  boundary: periodic
+  ordering: coarse_before_detail
+  detail_patch_size: 16
+  detail_passes: 10
+  fine_proposal_sigma: 0.04
+  coarse_updates: true
+  coarse_patch_size: 16
+  coarse_step_size: 0.04
+  coarse_passes: 1
+  coarse_update_scheme: two_stage_coarse_action
+  initial_detail_only_sweeps: 50
+  pcn_enabled: false
+  pcn_rho: null
+  pcn_interval_sweeps: null
+  attempts_per_sweep_convention: ceil(2 * L_f^2 / P^2) patches per pass, multiplied by passes and chains
+
+random_seed: 2126071864
+n_chains: 256
+n_sweeps: 500
+checkpoint_every: 500
+measure_every: 1
+save_every: 500
+batch_size: 64
+device: cpu
+
+start_index: 0
+coarse_source_selection: contiguous_from_start_index
+
+resume:
+  enabled: false
+  checkpoint_path: null

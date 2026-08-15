@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Historical wrapped eight-layer RQ-spline baseline. This uses the recovered
+# action-lowtail checkpoint as a sweep-zero initializer; it is intentionally
+# retained for same-volume comparison and is not the volume-scalable default.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec env \
+  INITIALIZATION_MODE="${INITIALIZATION_MODE:-flow_sample}" \
+  GENERATED_CONFIG="${GENERATED_CONFIG:-perfect_blocking_upsampling/run_configs/generated/submit_flow_detail_coarse_wrapped_lam1p0.yaml}" \
+  "$ROOT/submit_flow_detail_coarse_detail" "$@"

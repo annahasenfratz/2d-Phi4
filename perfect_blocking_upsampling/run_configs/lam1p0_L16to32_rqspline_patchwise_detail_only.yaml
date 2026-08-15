@@ -1,0 +1,60 @@
+lambda: 1.0
+kappa_f: 0.340301
+kappa_c: 0.340301
+eta: 0.25
+eta_scale: 2^0.125
+eta_scale_numeric: 1.0905077326652577
+L_c: 16
+L_f: 32
+block_factor: 2
+
+fine_config_source: data/configs_phi4_2d/lam1p0_kappac0p340301_L32/configs.npz
+coarse_config_source: data/configs_phi4_2d/lam1p0_kappac0p340301_L16/configs.npz
+native_reference_source: data/configs_phi4_2d/lam1p0_kappac0p340301_L32/configs.npz
+
+kernel_path: perfect_blocking/perfect_blocking_lam1p0/kernels/selected_for_upscaling/best_7x7_phi2_nn_guarded_eta_included.json
+kernel_coefficients_include_eta_scale: true
+
+flow_type: rqspline
+flow_checkpoint: perfect_blocking_upsampling/runs/lam1p0/lam1p0_L8to16_kf0p340301_kc0p340301_7x7_phi2_nn_guarded_autoregressive_detail_8layer48_rqspline_localreg_from_affine_ep137_20260717T125835Z/checkpoints/checkpoint_best.pt
+flow_architecture:
+  autoregressive_stages: [d01_given_coarse, d10_given_coarse_d01, d11_given_coarse_d01_d10]
+  coupling_layers: 8
+  hidden_channels: 48
+  conv_kernel_size: 3
+  transform: rational_quadratic_spline
+
+mode: patchwise_detail_only
+run_id_style: controlled_patch
+legacy_runner: perfect_blocking_upsampling/scripts/run_lam1p0_rqspline_patchwise.py
+legacy_extend_runner: perfect_blocking_upsampling/scripts/run_lam1p0_rqspline_patchwise.py
+output_root: perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/coarse_detail_L16to32
+
+patch:
+  update_mode: detail_only
+  proposal: local_symmetric_fine_detail_patch
+  random_origin: true
+  boundary: periodic
+  detail_patch_size: 8
+  detail_passes: 1
+  fine_proposal_sigma: 0.08
+  coarse_updates: false
+  coarse_patch_size: 4
+  coarse_step_size: 0.08
+  coarse_passes: 0
+  pcn_enabled: false
+  pcn_rho: null
+  pcn_interval_sweeps: null
+
+random_seed: 2026071717
+n_chains: 64
+n_sweeps: 100
+checkpoint_every: 25
+measure_every: 1
+save_every: 25
+batch_size: 64
+device: cpu
+
+resume:
+  enabled: false
+  checkpoint_path: null

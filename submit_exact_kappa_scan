@@ -1,0 +1,385 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Direct-L16 coarse kappa scan for the exact fixed-latent L16->L32 chain.
+# Edit parameters here, then run. By default this launches a nohup
+# background job and writes logs under:
+#   perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/L16to32_exact_direct_L16_kappac_scan/logs/
+#   ./submit_exact_kappa_scan --kappa-c 0.3230
+# ./submit_exact_kappa_scan --kappa-c-list 0.3225,0.3230,0.3235,0.3240
+
+ORIGINAL_ARGS=("$@")
+
+LAMBDA="${LAMBDA:-0.2}"
+KAPPA_F="${KAPPA_F:-0.323124}"
+KAPPA_C="${KAPPA_C:-0.3240}"
+KAPPA_C_LIST_CSV="${KAPPA_C_LIST_CSV:-}"
+OUT_ROOT="${OUT_ROOT:-perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/L16to32_exact_direct_L16_kappac_scan}"
+COARSE_SEED_OFFSET="${COARSE_SEED_OFFSET:-1000}"
+RUN_SUFFIX="${RUN_SUFFIX:-_2b}"
+COARSE_TAG_SUFFIX="${COARSE_TAG_SUFFIX:-}"
+GENERATE_COARSE="${GENERATE_COARSE:-0}"   # --generate-coarse if new coarse configs are needed
+
+FROM_L="${FROM_L:-16}"
+TO_L="${TO_L:-32}"
+CONFIGS="${CONFIGS:-488}"
+SWEEPS="${SWEEPS:-1000}"
+START_INDEX="${START_INDEX:-2512}"
+
+COARSE_PATCH="${COARSE_PATCH:-4}"
+DETAIL_PATCH="${DETAIL_PATCH:-8}"
+DETAIL_PASSES="${DETAIL_PASSES:-8}"
+
+COARSE_N_CONFIGS="${COARSE_N_CONFIGS:-5000}"
+COARSE_THERMAL_SWEEPS="${COARSE_THERMAL_SWEEPS:-1500}"
+COARSE_SKIP_SWEEPS="${COARSE_SKIP_SWEEPS:-8}"
+COARSE_CLUSTERS_PER_SWEEP="${COARSE_CLUSTERS_PER_SWEEP:-1}"
+
+CHECKPOINT_EVERY="${CHECKPOINT_EVERY:-100}"
+RESUME="${RESUME:-1}"
+BACKGROUND="${BACKGROUND:-1}"
+DRY_RUN=0
+COARSE_SEED_BASE="${COARSE_SEED_BASE:-2026070700}"
+FORCE_REGENERATE_COARSE="${FORCE_REGENERATE_COARSE:-0}"
+
+usage() {
+  cat <<EOF
+Usage: ./submit_exact_kappa_scan [options]
+
+Kappa options:
+  --kappa-c X              Run one direct coarse kappa value.
+  --kappa-c-list A,B,C     Run a comma-separated list of direct coarse kappas.
+  --kappa-f X              Fine/action kappa. Default: $KAPPA_F
+
+Other common options:
+  --configs N
+  --sweeps N
+  --coarse-patch N
+  --detail-patch N
+  --detail-passes N
+  --start-index N
+  --resume / --no-resume
+  --background / --foreground
+  --dry-run
+  --out-root DIR           Separate output root for coarse ensembles, runs, logs.
+  --coarse-seed-offset N   Offset added to generated coarse ensemble seed.
+  --run-suffix TEXT        Suffix appended to run directories, e.g. _2.
+  --coarse-tag-suffix TEXT Suffix appended to generated coarse ensemble directories.
+  --generate-coarse        Generate coarse ensemble if missing. Default is to require existing configs.
+  --force-regenerate-coarse
+  --help
+
+Environment variables are also still supported, e.g.
+  KAPPA_C=0.3230 ./submit_exact_kappa_scan
+  KAPPA_C_LIST_CSV=0.3225,0.3230 ./submit_exact_kappa_scan
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --kappa-c)
+      KAPPA_C="$2"
+      KAPPA_C_LIST_CSV=""
+      shift 2
+      ;;
+    --kappa-c-list)
+      KAPPA_C_LIST_CSV="$2"
+      shift 2
+      ;;
+    --kappa-f)
+      KAPPA_F="$2"
+      shift 2
+      ;;
+    --lambda)
+      LAMBDA="$2"
+      shift 2
+      ;;
+    --configs)
+      CONFIGS="$2"
+      shift 2
+      ;;
+    --sweeps)
+      SWEEPS="$2"
+      shift 2
+      ;;
+    --coarse-patch)
+      COARSE_PATCH="$2"
+      shift 2
+      ;;
+    --detail-patch)
+      DETAIL_PATCH="$2"
+      shift 2
+      ;;
+    --detail-passes)
+      DETAIL_PASSES="$2"
+      shift 2
+      ;;
+    --start-index)
+      START_INDEX="$2"
+      shift 2
+      ;;
+    --checkpoint-every)
+      CHECKPOINT_EVERY="$2"
+      shift 2
+      ;;
+    --resume)
+      RESUME=1
+      shift
+      ;;
+    --no-resume)
+      RESUME=0
+      shift
+      ;;
+    --background)
+      BACKGROUND=1
+      shift
+      ;;
+    --foreground)
+      BACKGROUND=0
+      shift
+      ;;
+    --dry-run)
+      DRY_RUN=1
+      shift
+      ;;
+    --out-root)
+      OUT_ROOT="$2"
+      shift 2
+      ;;
+    --coarse-seed-offset)
+      COARSE_SEED_OFFSET="$2"
+      shift 2
+      ;;
+    --run-suffix)
+      RUN_SUFFIX="$2"
+      shift 2
+      ;;
+    --coarse-tag-suffix)
+      COARSE_TAG_SUFFIX="$2"
+      shift 2
+      ;;
+    --generate-coarse)
+      GENERATE_COARSE=1
+      shift
+      ;;
+    --force-regenerate-coarse)
+      FORCE_REGENERATE_COARSE=1
+      shift
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "ERROR: unknown option: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ -n "$KAPPA_C_LIST_CSV" ]]; then
+  IFS=',' read -r -a KAPPA_C_LIST <<< "$KAPPA_C_LIST_CSV"
+else
+  KAPPA_C_LIST=("$KAPPA_C")
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+PYTHON=""
+if [[ -x "../../.venv/bin/python" ]]; then
+  PYTHON="../../.venv/bin/python"
+elif [[ -x ".venv/bin/python" ]]; then
+  PYTHON=".venv/bin/python"
+else
+  echo "ERROR: could not find ../../.venv/bin/python or .venv/bin/python" >&2
+  exit 1
+fi
+
+GENERATOR="phi4_phase-diagram/src/generate_phi4_embedded_wolff_radial_heatbath.py"
+DRIVER="perfect_blocking_upsampling/scripts/run_lam0p2_L8to16_fixed_latent_coarse_patch_chain.py"
+FINE_REFERENCE="perfect_blocking_upsampling/outputs/lam0p2_kappa0p323124/native/L32/configs.npz"
+KERNEL_PATH="perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/tail_aware_kernel_search_L16to32/rand5x5_0084_kernel.json"
+BASELINE_CKPT="perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/rand5x5_0084_residual_flow_pilot/checkpoints/checkpoint_best_residual_flow.pt"
+AR_CKPT="perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/rand5x5_0084_tail_aware_ar_flow_pilot/width0p03_tail0p03/autoregressive_checkpoint.pt"
+
+COARSE_ROOT="$OUT_ROOT/coarse_ensembles"
+RUN_ROOT="$OUT_ROOT/runs"
+LOG_DIR="$OUT_ROOT/logs"
+mkdir -p "$COARSE_ROOT" "$RUN_ROOT" "$LOG_DIR"
+
+for path in "$GENERATOR" "$DRIVER" "$FINE_REFERENCE" "$KERNEL_PATH" "$BASELINE_CKPT" "$AR_CKPT"; do
+  if [[ ! -e "$path" ]]; then
+    echo "ERROR: required path missing: $path" >&2
+    exit 1
+  fi
+done
+
+tag_float() {
+  local x="$1"
+  x="${x/-/m}"
+  x="${x//./p}"
+  echo "$x"
+}
+
+run_cmd() {
+  local log="$1"
+  shift
+  echo "COMMAND: $*" | tee "$log"
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "[dry-run] $*" | tee -a "$log"
+  else
+    set +e
+    PYTHONUNBUFFERED=1 "$@" 2>&1 | tee -a "$log"
+    local status=${PIPESTATUS[0]}
+    set -e
+    echo "EXIT_STATUS: $status" | tee -a "$log"
+    return "$status"
+  fi
+}
+
+main() {
+  local submitted="$0 $*"
+  local manifest="$OUT_ROOT/submit_exact_kappa_scan_manifest.txt"
+  {
+    echo "submitted_command: $submitted"
+    echo "lambda: $LAMBDA"
+    echo "kappa_f: $KAPPA_F"
+    echo "kappa_c_list: ${KAPPA_C_LIST[*]}"
+    echo "from_L: $FROM_L"
+    echo "to_L: $TO_L"
+    echo "configs: $CONFIGS"
+    echo "sweeps: $SWEEPS"
+    echo "coarse_patch: $COARSE_PATCH"
+    echo "detail_patch: $DETAIL_PATCH"
+    echo "detail_passes: $DETAIL_PASSES"
+    echo "coarse_n_configs: $COARSE_N_CONFIGS"
+    echo "coarse_thermal_sweeps: $COARSE_THERMAL_SWEEPS"
+    echo "coarse_skip_sweeps: $COARSE_SKIP_SWEEPS"
+    echo "coarse_clusters_per_sweep: $COARSE_CLUSTERS_PER_SWEEP"
+    echo "coarse_seed_base: $COARSE_SEED_BASE"
+    echo "coarse_seed_offset: $COARSE_SEED_OFFSET"
+    echo "run_suffix: $RUN_SUFFIX"
+    echo "coarse_tag_suffix: $COARSE_TAG_SUFFIX"
+    echo "generate_coarse: $GENERATE_COARSE"
+    echo "force_regenerate_coarse: $FORCE_REGENERATE_COARSE"
+    echo "checkpoint_every: $CHECKPOINT_EVERY"
+    echo "resume: $RESUME"
+    echo
+  } >> "$manifest"
+
+  for KAPPA_C in "${KAPPA_C_LIST[@]}"; do
+    local kc_tag kf_tag coarse_dir coarse_cfg seed seed_digits run_dir gen_log run_log
+    kc_tag="$(tag_float "$(printf '%.6f' "$KAPPA_C")")"
+    kf_tag="$(tag_float "$(printf '%.6f' "$KAPPA_F")")"
+    coarse_dir="$COARSE_ROOT/lam$(tag_float "$LAMBDA")_kappac${kc_tag}_L${FROM_L}${COARSE_TAG_SUFFIX}"
+    coarse_cfg="$coarse_dir/configs.npz"
+    seed_digits="${kc_tag//[^0-9]/}"
+    seed=$((COARSE_SEED_BASE + 10#$seed_digits + COARSE_SEED_OFFSET))
+    gen_log="$LOG_DIR/generate_L${FROM_L}_kappac${kc_tag}.log"
+
+    if [[ -f "$coarse_cfg" && "$FORCE_REGENERATE_COARSE" -ne 1 ]]; then
+      echo "SKIP generation: $coarse_cfg exists"
+    elif [[ "$GENERATE_COARSE" -ne 1 && "$FORCE_REGENERATE_COARSE" -ne 1 ]]; then
+      echo "ERROR: required existing coarse config not found: $coarse_cfg" >&2
+      echo "Set GENERATE_COARSE=1 or pass --generate-coarse only if you intentionally want to generate it." >&2
+      exit 1
+    else
+      mkdir -p "$coarse_dir"
+      run_cmd "$gen_log" "$PYTHON" -u -B "$GENERATOR" \
+        --lambda "$LAMBDA" \
+        --kappa "$KAPPA_C" \
+        --L "$FROM_L" \
+        --n-configs "$COARSE_N_CONFIGS" \
+        --thermal-sweeps "$COARSE_THERMAL_SWEEPS" \
+        --skip-sweeps "$COARSE_SKIP_SWEEPS" \
+        --clusters-per-sweep "$COARSE_CLUSTERS_PER_SWEEP" \
+        --seed "$seed" \
+        --output-dir "$coarse_dir"
+    fi
+
+    run_dir="$RUN_ROOT/direct_L${FROM_L}_kappac${kc_tag}_to_L${TO_L}_kappaf${kf_tag}_patch${COARSE_PATCH}_detailpatch${DETAIL_PATCH}_detail${DETAIL_PASSES}${RUN_SUFFIX}"
+    run_log="$LOG_DIR/run_direct_L${FROM_L}_kappac${kc_tag}_kappaf${kf_tag}_patch${COARSE_PATCH}_detailpatch${DETAIL_PATCH}_detail${DETAIL_PASSES}${RUN_SUFFIX}.log"
+    mkdir -p "$run_dir"
+    cmd=("$PYTHON" -u -B "$DRIVER"
+      --from-L "$FROM_L"
+      --to-L "$TO_L"
+      --lambda "$LAMBDA"
+      --kappa-c "$KAPPA_C"
+      --kappa-f "$KAPPA_F"
+      --fine-reference "$FINE_REFERENCE"
+      --coarse-ensemble "$coarse_cfg"
+      --kernel-path "$KERNEL_PATH"
+      --baseline-checkpoint "$BASELINE_CKPT"
+      --best-checkpoint "$AR_CKPT"
+      --configs "$CONFIGS"
+      --sweeps "$SWEEPS"
+      --patch-sizes "$COARSE_PATCH"
+      --detail-patch-size "$DETAIL_PATCH"
+      --detail-passes "$DETAIL_PASSES"
+      --out-dir "$run_dir"
+      --print-every 100
+      --checkpoint-every "$CHECKPOINT_EVERY")
+    if [[ -n "$START_INDEX" ]]; then
+      cmd+=(--start-index "$START_INDEX")
+    fi
+    if [[ "$RESUME" -eq 1 ]]; then
+      cmd+=(--resume)
+    fi
+    run_cmd "$run_log" "${cmd[@]}"
+  done
+}
+
+if [[ "$BACKGROUND" -eq 1 && "$DRY_RUN" -ne 1 && "${SUBMIT_EXACT_KAPPA_SCAN_CHILD:-0}" -ne 1 ]]; then
+  tag="kf$(tag_float "$KAPPA_F")_patch${COARSE_PATCH}_detailpatch${DETAIL_PATCH}_detail${DETAIL_PASSES}"
+  timestamp="$(date +%Y%m%d_%H%M%S)"
+  nohup_log="$LOG_DIR/submit_exact_kappa_scan_${tag}_${timestamp}.nohup.log"
+  latest_log="$LOG_DIR/submit_exact_kappa_scan_${tag}.latest.nohup.log"
+  pid_file="$LOG_DIR/submit_exact_kappa_scan_${tag}.pid"
+  nohup env \
+    SUBMIT_EXACT_KAPPA_SCAN_CHILD=1 \
+    LAMBDA="$LAMBDA" \
+    KAPPA_F="$KAPPA_F" \
+    KAPPA_C="$KAPPA_C" \
+    KAPPA_C_LIST_CSV="$KAPPA_C_LIST_CSV" \
+    OUT_ROOT="$OUT_ROOT" \
+    COARSE_SEED_OFFSET="$COARSE_SEED_OFFSET" \
+    RUN_SUFFIX="$RUN_SUFFIX" \
+    COARSE_TAG_SUFFIX="$COARSE_TAG_SUFFIX" \
+    FROM_L="$FROM_L" \
+    TO_L="$TO_L" \
+    CONFIGS="$CONFIGS" \
+    SWEEPS="$SWEEPS" \
+    START_INDEX="$START_INDEX" \
+    COARSE_PATCH="$COARSE_PATCH" \
+    DETAIL_PATCH="$DETAIL_PATCH" \
+    DETAIL_PASSES="$DETAIL_PASSES" \
+    COARSE_N_CONFIGS="$COARSE_N_CONFIGS" \
+    COARSE_THERMAL_SWEEPS="$COARSE_THERMAL_SWEEPS" \
+    COARSE_SKIP_SWEEPS="$COARSE_SKIP_SWEEPS" \
+    COARSE_CLUSTERS_PER_SWEEP="$COARSE_CLUSTERS_PER_SWEEP" \
+    CHECKPOINT_EVERY="$CHECKPOINT_EVERY" \
+    RESUME="$RESUME" \
+    BACKGROUND=0 \
+    DRY_RUN=0 \
+    COARSE_SEED_BASE="$COARSE_SEED_BASE" \
+    FORCE_REGENERATE_COARSE="$FORCE_REGENERATE_COARSE" \
+    GENERATE_COARSE="$GENERATE_COARSE" \
+    bash "$0" --foreground > "$nohup_log" 2>&1 &
+  pid="$!"
+  printf '%s\n' "$pid" > "$pid_file"
+  printf '%s\n' "$nohup_log" > "$LOG_DIR/submit_exact_kappa_scan_${tag}.latest_log_path.txt"
+  ln -sf "$(basename "$nohup_log")" "$latest_log"
+  echo "Started background kappa scan."
+  echo "PID: $pid"
+  echo "Log: $nohup_log"
+  echo "Latest log symlink: $latest_log"
+  echo "Watch with:"
+  echo "  tail -f $nohup_log"
+  echo "Per-kappa logs and outputs are under:"
+  echo "  $LOG_DIR"
+  echo "  $RUN_ROOT"
+else
+  main "$@"
+fi

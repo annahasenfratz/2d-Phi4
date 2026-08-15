@@ -1,0 +1,16 @@
+{
+  "name": "rand5x5_0084",
+  "type": "orbit_kernel",
+  "eta": 0.25,
+  "scale_factor": 2,
+  "normalization": "sum_to_one",
+  "source": "perfect_blocking_upsampling/outputs/controlled_patch_lam0p2/tail_aware_kernel_search_L16to32/kernel_search_summary.csv",
+  "orbits": {
+    "00": 0.8436928615755199,
+    "10": -0.017402121741681566,
+    "11": -0.08347926886578183,
+    "20": 0.05452001715238207,
+    "21": 0.046572888732743664,
+    "22": -0.0077076194042859925
+  }
+}

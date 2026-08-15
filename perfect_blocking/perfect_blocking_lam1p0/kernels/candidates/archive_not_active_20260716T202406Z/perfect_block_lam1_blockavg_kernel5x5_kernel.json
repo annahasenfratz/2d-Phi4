@@ -1,0 +1,156 @@
+{
+  "lambda": 1.0,
+  "eta_exponent": 0.25,
+  "b": 2,
+  "block_norm": 1.0905077326652577,
+  "K_sum": 1.0,
+  "blocking_rule": "symmetric_2x2_average_after_K",
+  "weights": {
+    "w00": 1.2452107664752867,
+    "w10": 0.023032191168063633,
+    "w11": -0.057176753268103855,
+    "w20": 0.013216835737937464,
+    "w21": -0.027381241263172477,
+    "w22": 0.014387517269626044
+  },
+  "kernel_shells": {
+    "w00": [
+      [
+        0,
+        0
+      ]
+    ],
+    "w10": [
+      [
+        1,
+        0
+      ],
+      [
+        -1,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        -1
+      ]
+    ],
+    "w11": [
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        -1
+      ],
+      [
+        -1,
+        1
+      ],
+      [
+        -1,
+        -1
+      ]
+    ],
+    "w20": [
+      [
+        2,
+        0
+      ],
+      [
+        -2,
+        0
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        -2
+      ]
+    ],
+    "w21": [
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        -1
+      ],
+      [
+        -2,
+        1
+      ],
+      [
+        -2,
+        -1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        -2
+      ],
+      [
+        -1,
+        2
+      ],
+      [
+        -1,
+        -2
+      ]
+    ],
+    "w22": [
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        -2
+      ],
+      [
+        -2,
+        2
+      ],
+      [
+        -2,
+        -2
+      ]
+    ]
+  },
+  "shell_multiplicities": {
+    "w00": 1,
+    "w10": 4,
+    "w11": 4,
+    "w20": 4,
+    "w21": 8,
+    "w22": 4
+  },
+  "source_directory": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1",
+  "source_ensembles": {
+    "fine": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1/data/fine_lam1_kappa0p34008_L32_seed20240618.npz"
+  },
+  "target_reference_ensemble": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1/data/coarse_generated_lam1_kappa0p34008_L16_seed20240618.npz",
+  "optimizer": "scipy.optimize.minimize Powell, multiple starts",
+  "objective_definition": "D_op = 0.5 * DeltaO^T C_reg^{-1} DeltaO; C_reg=C+eps*trace(C)/Nop*I; eps=1e-3",
+  "objective_operators": [
+    "m2",
+    "m4",
+    "NN",
+    "diag",
+    "2nn",
+    "NN2",
+    "diag2",
+    "2nn2",
+    "action_density"
+  ]
+}

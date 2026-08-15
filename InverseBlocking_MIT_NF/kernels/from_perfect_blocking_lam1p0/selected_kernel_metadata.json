@@ -1,0 +1,185 @@
+{
+  "original_source_path": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0",
+  "exact_file_copied": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/perfect_blocking/perfect_blocking_lam1p0/perfect_block_lam1_kernel5x5_KL_etafit_L32_to_L16_summary.json",
+  "local_copied_summary": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/InverseBlocking_MIT_NF/kernels/from_perfect_blocking_lam1p0/perfect_block_lam1_kernel5x5_KL_etafit_L32_to_L16_summary.json",
+  "local_copied_report": "/Users/anna/Work/Research/Normalizing-flow/Inverse_RG/InverseBlocking_MIT_NF/kernels/from_perfect_blocking_lam1p0/perfect_block_lam1_kernel5x5_KL_etafit_L32_to_L16_report.md",
+  "copy_timestamp_utc": "2026-06-24T03:33:34.418016+00:00",
+  "eta_convention": "eta is exponent; block_norm = b**(eta_exponent/2); B = block_norm * K",
+  "lambda": 1.0,
+  "kappa_cr_approx": 0.3402,
+  "eta": 0.25,
+  "eta_exponent": 0.25,
+  "b": 2,
+  "block_norm": 1.0905077326652577,
+  "block_norm_numeric": 1.0905077326652577,
+  "K_normalization": "K normalized so sum_x K = 1",
+  "sum_x_K": 0.9999999999999999,
+  "renormalized_in_diagnostic": false,
+  "weights": {
+    "w00": 0.7870554480116678,
+    "w10": 0.02707804843064735,
+    "w11": 0.013960878712339241,
+    "w20": 0.014384144266942532,
+    "w21": 0.002391343089368392,
+    "w22": -0.006969619591582884
+  },
+  "kernel_shells": {
+    "w00": [
+      [
+        0,
+        0
+      ]
+    ],
+    "w10": [
+      [
+        1,
+        0
+      ],
+      [
+        -1,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        -1
+      ]
+    ],
+    "w11": [
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        -1
+      ],
+      [
+        -1,
+        1
+      ],
+      [
+        -1,
+        -1
+      ]
+    ],
+    "w20": [
+      [
+        2,
+        0
+      ],
+      [
+        -2,
+        0
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        0,
+        -2
+      ]
+    ],
+    "w21": [
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        -1
+      ],
+      [
+        -2,
+        1
+      ],
+      [
+        -2,
+        -1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        -2
+      ],
+      [
+        -1,
+        2
+      ],
+      [
+        -1,
+        -2
+      ]
+    ],
+    "w22": [
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        -2
+      ],
+      [
+        -2,
+        2
+      ],
+      [
+        -2,
+        -2
+      ]
+    ]
+  },
+  "shell_multiplicities": {
+    "w00": 1,
+    "w10": 4,
+    "w11": 4,
+    "w20": 4,
+    "w21": 8,
+    "w22": 4
+  },
+  "stencil_5x5_centered": [
+    [
+      -0.006969619591582884,
+      0.002391343089368392,
+      0.014384144266942532,
+      0.002391343089368392,
+      -0.006969619591582884
+    ],
+    [
+      0.002391343089368392,
+      0.013960878712339241,
+      0.02707804843064735,
+      0.013960878712339241,
+      0.002391343089368392
+    ],
+    [
+      0.014384144266942532,
+      0.02707804843064735,
+      0.7870554480116678,
+      0.02707804843064735,
+      0.014384144266942532
+    ],
+    [
+      0.002391343089368392,
+      0.013960878712339241,
+      0.02707804843064735,
+      0.013960878712339241,
+      0.002391343089368392
+    ],
+    [
+      -0.006969619591582884,
+      0.002391343089368392,
+      0.014384144266942532,
+      0.002391343089368392,
+      -0.006969619591582884
+    ]
+  ]
+}

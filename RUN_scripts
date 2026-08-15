@@ -1,0 +1,19 @@
+For L16→L32, start run 1 with:
+
+  bash perfect_blocking_upsampling/scripts/submit_lam1p0_checkerboard_mh.sh r1 --execute --background
+
+  It writes to:
+
+  perfect_blocking_upsampling/outputs/checkerboard_mh_lam1p0/L16toL32/
+  L16toL32_N500_S400_start0_div2_D2_sc0p40_sd0p10_r1/
+
+  For L32→L64:
+
+  LC=32 LF=64 N_CHAINS=500 N_SWEEPS=400 START_INDEX=0 \
+  bash perfect_blocking_upsampling/scripts/submit_lam1p0_checkerboard_mh.sh r1 --execute --background
+
+  That writes under:
+
+  perfect_blocking_upsampling/outputs/checkerboard_mh_lam1p0/L32toL64/
+
+  The command prints the exact run directory and background PID.

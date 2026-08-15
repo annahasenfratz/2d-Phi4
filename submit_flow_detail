@@ -1,0 +1,337 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+###############################################################################
+# Lambda=1.0 flow/detail patchwise submit script.
+#
+# Edit the parameter block below, then launch a background nohup job with:
+#
+#   ./submit_flow_detail_coarse_detail
+#
+# This script writes a resolved YAML config and then calls the maintained generic
+# launcher:
+#
+#   perfect_blocking_upsampling/scripts/submit_flow_detail_coarse_detail
+#
+# You can still bypass this parameter block by passing an explicit --config.
+###############################################################################
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+if [[ "${1:-}" == "--preset" ]]; then
+  case "${2:-}" in
+    lam1p0_L16to32_action_lowtail|lam1p0_L16to32_balanced|lam1p0_L16to32_newkernel)
+      shift 2
+      exec perfect_blocking_upsampling/scripts/submit_flow_detail_coarse_detail \
+        --config perfect_blocking_upsampling/run_configs/lam1p0_L16to32_rqspline_balanced_coarse_detail_production.yaml "$@"
+      ;;
+    lam1p0_L32to64_action_lowtail|lam1p0_L32to64_newkernel|lam1p0_L32to64_RQS)
+      shift 2
+      exec perfect_blocking_upsampling/scripts/submit_flow_detail_coarse_detail \
+        --config perfect_blocking_upsampling/run_configs/lam1p0_L32to64_rqspline_newkernel_coarse_detail_production.yaml "$@"
+      ;;
+    *)
+      printf 'unknown submit_flow_detail_coarse_detail preset: %s\n' "${2:-}" >&2
+      exit 2
+      ;;
+  esac
+fi
+
+###############################################################################
+# Edit parameters here.
+###############################################################################
+
+LAMBDA="1.0"
+KAPPA_F="0.340301"
+KAPPA_C="0.340301"
+
+LC="${LC:-16}"
+LF="${LF:-32}"
+
+RANDOM_SEED="31211922"
+N_CHAINS="1000"
+N_SWEEPS="300"
+MEASURE_EVERY="5"
+START_INDEX="2000"  # auto/random samples by RANDOM_SEED; set 0, 1000, ... for contiguous coarse configs.
+
+# Coarse source is the only input ensemble used to initialize the patchwise run.
+# Leave as "auto" to use data/configs_phi4_2d/lam1p0_kappac<KAPPA_C>_L<LC>/configs.npz.
+COARSE_CONFIG_SOURCE="auto"
+
+# Native fine configs are only a reference for measurements/comparisons, not an
+# input chain state. Leave as "auto" to use L<LF> with KAPPA_F.
+NATIVE_REFERENCE_SOURCE="auto"
+
+KERNEL_PATH="perfect_blocking/perfect_blocking_lam1p0/kernels/final/chosen_kernel.json"
+KERNEL_COEFFICIENTS_INCLUDE_ETA_SCALE="true"
+
+FLOW_TYPE="rqspline"
+FLOW_CHECKPOINT="perfect_blocking_upsampling/runs/lam1p0/training/lam1p0_L16to32_newkernel_rqspline_N2000_action_lowtail_from_N2000_bestpatch_20260719T171401Z/checkpoints/checkpoint_best_patch.pt"
+
+# Use patchwise_detail_only for fixed-coarse validation, or patchwise_coarse_detail
+# for the production-style local coarse+detail update.
+MODE="patchwise_detail_only" # "patchwise_coarse_detail"
+OUTPUT_ROOT="auto"
+
+DETAIL_PATCH_SIZE="16"
+DETAIL_PASSES="10"
+FINE_PROPOSAL_SIGMA="0.04"
+
+COARSE_PATCH_SIZE="16"
+COARSE_PASSES="0"
+COARSE_STEP_SIZE="0.04"
+
+PCN_ENABLED="false"
+PCN_RHO=""
+PCN_INTERVAL_SWEEPS=""
+
+CHECKPOINT_EVERY="25"
+SAVE_EVERY="25"
+BATCH_SIZE="64"
+DEVICE="cpu"
+
+
+ETA="0.25"
+BLOCK_FACTOR="2"
+# Normal use starts a background nohup job. Use --prepare-only to create the
+# run directory/config without launching. Set RUN_IN_NOHUP=0 for foreground
+# debugging, or DRY_RUN=1 to exercise the launcher dry-run path.
+RUN_IN_NOHUP="${RUN_IN_NOHUP:-1}"
+DRY_RUN="${DRY_RUN:-0}"
+
+# Optional manual run id. The default labels this as the new-kernel RQ-spline
+# production flow. By default this wrapper is configured for L32->L64; set
+# LC="16" and LF="32" above for L16->L32 trials.
+if [[ "$START_INDEX" == "auto" || "$START_INDEX" == "random" || -z "$START_INDEX" ]]; then
+  START_TAG="cfgrandom"
+else
+  START_TAG="cfg${START_INDEX}"
+fi
+RUN_ID="prod_cd_bL${LF}_RQS_${START_TAG}_N${N_CHAINS}_Pc${COARSE_PATCH_SIZE}x${COARSE_PASSES}_Pd${DETAIL_PATCH_SIZE}x${DETAIL_PASSES}_kf${KAPPA_F//./p}_kc${KAPPA_C//./p}"
+
+if [[ "$LC" == "16" && "$LF" == "32" ]]; then
+  BASE_CONFIG="perfect_blocking_upsampling/run_configs/lam1p0_L16to32_rqspline_balanced_coarse_detail_production.yaml"
+elif [[ "$LC" == "32" && "$LF" == "64" ]]; then
+  BASE_CONFIG="perfect_blocking_upsampling/run_configs/lam1p0_L32to64_rqspline_newkernel_coarse_detail_production.yaml"
+else
+  printf 'Unsupported LC/LF pair in submit_flow_detail_coarse_detail: LC=%s LF=%s\n' "$LC" "$LF" >&2
+  printf 'Supported pairs are LC=16 LF=32 and LC=32 LF=64.\n' >&2
+  exit 2
+fi
+GENERATED_CONFIG="perfect_blocking_upsampling/run_configs/generated/submit_flow_detail_coarse_detail_lam1p0.yaml"
+GENERIC_SUBMIT="perfect_blocking_upsampling/scripts/submit_flow_detail_coarse_detail"
+
+###############################################################################
+
+has_config=0
+has_run_id=0
+prepare_only=0
+filtered_args=()
+for arg in "$@"; do
+  if [[ "$arg" == "--config" || "$arg" == --config=* ]]; then
+    has_config=1
+  fi
+  if [[ "$arg" == "--run-id" || "$arg" == --run-id=* ]]; then
+    has_run_id=1
+  fi
+  if [[ "$arg" == "--prepare-only" ]]; then
+    prepare_only=1
+    continue
+  fi
+  if [[ "$arg" == "--execute" ]]; then
+    continue
+  fi
+  filtered_args+=("$arg")
+done
+
+if [[ "$has_config" == "1" ]]; then
+  exec "$GENERIC_SUBMIT" "$@"
+fi
+
+if [[ -x "../../.venv/bin/python" ]]; then
+  PYTHON="../../.venv/bin/python"
+else
+  PYTHON="python3"
+fi
+
+mkdir -p "$(dirname "$GENERATED_CONFIG")"
+
+export \
+  LAMBDA KAPPA_F KAPPA_C ETA BLOCK_FACTOR LC LF \
+  COARSE_CONFIG_SOURCE NATIVE_REFERENCE_SOURCE \
+  KERNEL_PATH KERNEL_COEFFICIENTS_INCLUDE_ETA_SCALE \
+  FLOW_TYPE FLOW_CHECKPOINT MODE OUTPUT_ROOT \
+  DETAIL_PATCH_SIZE DETAIL_PASSES FINE_PROPOSAL_SIGMA \
+  COARSE_PATCH_SIZE COARSE_PASSES COARSE_STEP_SIZE \
+  PCN_ENABLED PCN_RHO PCN_INTERVAL_SWEEPS \
+  RANDOM_SEED N_CHAINS N_SWEEPS CHECKPOINT_EVERY MEASURE_EVERY SAVE_EVERY \
+  BATCH_SIZE DEVICE START_INDEX
+
+"$PYTHON" -B - "$BASE_CONFIG" "$GENERATED_CONFIG" <<'PY'
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+import yaml
+
+base = Path(sys.argv[1])
+out = Path(sys.argv[2])
+cfg = yaml.safe_load(base.read_text(encoding="utf-8"))
+
+
+def as_float(name: str) -> float:
+    return float(os.environ[name])
+
+
+def as_int(name: str) -> int:
+    return int(os.environ[name])
+
+
+def as_bool(name: str) -> bool:
+    return os.environ[name].strip().lower() in {"1", "true", "yes", "on"}
+
+
+def tag_float(value: str) -> str:
+    return value.replace("-", "m").replace(".", "p")
+
+
+def auto_config_path(kappa: str, lattice_size: str) -> str:
+    return f"data/configs_phi4_2d/lam1p0_kappac{tag_float(kappa)}_L{lattice_size}/configs.npz"
+
+
+eta = as_float("ETA")
+coarse_source = os.environ["COARSE_CONFIG_SOURCE"]
+if coarse_source == "auto":
+    coarse_source = auto_config_path(os.environ["KAPPA_C"], os.environ["LC"])
+native_reference = os.environ["NATIVE_REFERENCE_SOURCE"]
+if native_reference == "auto":
+    native_reference = auto_config_path(os.environ["KAPPA_F"], os.environ["LF"])
+output_root = os.environ["OUTPUT_ROOT"]
+if output_root == "auto":
+    output_root = f"perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/coarse_detail_L{os.environ['LC']}to{os.environ['LF']}"
+
+cfg.update(
+    {
+        "lambda": as_float("LAMBDA"),
+        "kappa_f": as_float("KAPPA_F"),
+        "kappa_c": as_float("KAPPA_C"),
+        "eta": eta,
+        "eta_scale": f"2^{eta / 2:g}",
+        "eta_scale_numeric": 2.0 ** (eta / 2.0),
+        "L_c": as_int("LC"),
+        "L_f": as_int("LF"),
+        "block_factor": as_int("BLOCK_FACTOR"),
+        # fine_config_source is retained for generic launcher compatibility.
+        # In this patchwise runner it is used only as the native fine reference.
+        "fine_config_source": native_reference,
+        "reference_config_source": native_reference,
+        "coarse_config_source": coarse_source,
+        "native_reference_source": native_reference,
+        "kernel_path": os.environ["KERNEL_PATH"],
+        "kernel_coefficients_include_eta_scale": as_bool("KERNEL_COEFFICIENTS_INCLUDE_ETA_SCALE"),
+        "flow_type": os.environ["FLOW_TYPE"],
+        "flow_checkpoint": os.environ["FLOW_CHECKPOINT"],
+        "mode": os.environ["MODE"],
+        "run_id_style": "controlled_patch",
+        "legacy_runner": "perfect_blocking_upsampling/scripts/run_lam1p0_rqspline_patchwise.py",
+        "legacy_extend_runner": "perfect_blocking_upsampling/scripts/run_lam1p0_rqspline_patchwise.py",
+        "output_root": output_root,
+        "random_seed": as_int("RANDOM_SEED"),
+        "n_chains": as_int("N_CHAINS"),
+        "start_index": None if os.environ["START_INDEX"] in {"", "auto", "random"} else as_int("START_INDEX"),
+        "coarse_source_selection": "random_without_replacement" if os.environ["START_INDEX"] in {"", "auto", "random"} else "contiguous_from_start_index",
+        "n_sweeps": as_int("N_SWEEPS"),
+        "checkpoint_every": as_int("CHECKPOINT_EVERY"),
+        "measure_every": as_int("MEASURE_EVERY"),
+        "save_every": as_int("SAVE_EVERY"),
+        "batch_size": as_int("BATCH_SIZE"),
+        "device": os.environ["DEVICE"],
+    }
+)
+
+patch = dict(cfg.get("patch", {}))
+patch.update(
+    {
+        "update_mode": "detail_only" if os.environ["MODE"] == "patchwise_detail_only" else "coarse_detail",
+        "random_origin": True,
+        "boundary": "periodic",
+        "detail_patch_size": as_int("DETAIL_PATCH_SIZE"),
+        "detail_passes": as_int("DETAIL_PASSES"),
+        "fine_proposal_sigma": as_float("FINE_PROPOSAL_SIGMA"),
+        "coarse_updates": os.environ["MODE"] == "patchwise_coarse_detail",
+        "coarse_patch_size": as_int("COARSE_PATCH_SIZE"),
+        "coarse_step_size": as_float("COARSE_STEP_SIZE"),
+        "coarse_passes": as_int("COARSE_PASSES"),
+        "pcn_enabled": as_bool("PCN_ENABLED"),
+        "pcn_rho": None if not os.environ["PCN_RHO"] else as_float("PCN_RHO"),
+        "pcn_interval_sweeps": None if not os.environ["PCN_INTERVAL_SWEEPS"] else as_int("PCN_INTERVAL_SWEEPS"),
+    }
+)
+cfg["patch"] = patch
+cfg["resume"] = {"enabled": False, "checkpoint_path": None}
+
+out.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
+PY
+
+cmd=("$GENERIC_SUBMIT" --config "$GENERATED_CONFIG")
+if [[ -n "$RUN_ID" && "$has_run_id" == "0" ]]; then
+  cmd+=(--run-id "$RUN_ID")
+fi
+if (( ${#filtered_args[@]} > 0 )); then
+  cmd+=("${filtered_args[@]}")
+fi
+
+if [[ "$prepare_only" == "1" ]]; then
+  exec "${cmd[@]}"
+fi
+
+if [[ "$DRY_RUN" == "1" ]]; then
+  exec "${cmd[@]}" --execute --dry-run
+fi
+
+run_dir="$("${cmd[@]}")"
+mkdir -p "$run_dir/logs" "$run_dir/manifests"
+
+submit_log="$run_dir/logs/submit_flow_detail_coarse_detail.nohup.log"
+pid_file="$run_dir/manifests/submit_nohup.pid"
+submit_manifest="$run_dir/manifests/submit_manifest.json"
+
+launch_cmd=("${cmd[@]}" --run-dir "$run_dir" --execute)
+
+"$PYTHON" -B - "$submit_manifest" "$run_dir" "$submit_log" "$pid_file" "${launch_cmd[@]}" <<'PY'
+from __future__ import annotations
+
+import json
+import os
+import sys
+import time
+
+manifest_path, run_dir, log, pid_file, *cmd = sys.argv[1:]
+payload = {
+    "created_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    "run_dir": run_dir,
+    "nohup_log": log,
+    "pid_file": pid_file,
+    "command": cmd,
+    "cwd": os.getcwd(),
+}
+with open(manifest_path, "w", encoding="utf-8") as fh:
+    json.dump(payload, fh, indent=2)
+    fh.write("\n")
+PY
+
+printf 'Run directory: %s\n' "$run_dir"
+printf 'Log: %s\n' "$submit_log"
+
+if [[ "$RUN_IN_NOHUP" == "1" ]]; then
+  nohup "${launch_cmd[@]}" >"$submit_log" 2>&1 &
+  pid="$!"
+  printf '%s\n' "$pid" > "$pid_file"
+  printf 'Submitted PID: %s\n' "$pid"
+else
+  printf 'RUN_IN_NOHUP=0: running in foreground\n'
+  exec "${launch_cmd[@]}"
+fi

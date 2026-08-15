@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# Coordinate-MH test: wrapped flow initializes sweep zero, then physical
+# inverse-blocking coordinates evolve with exact fine-action Metropolis steps.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+
+# `N_CHAINS` is the number of independent coarse configurations/chains.
+# Each sweep makes one full coarse update followed by DETAILS_PER_COARSE full
+# detail-coordinate passes. Replicated sweep-zero flow details are optional
+# and controlled separately by DETAIL_REPLICAS_PER_COARSE.
+N_CHAINS="${N_CHAINS:-382}"
+N_SWEEPS="${N_SWEEPS:-400}"
+SAVE_SWEEPS="${SAVE_SWEEPS:-$(seq -s, 0 5 400)}"
+BATCH_SIZE="${BATCH_SIZE:-32}"
+SEED="${SEED:-2026071477}"
+DEVICE="${DEVICE:-cpu}"
+LC="${LC:-16}"
+LF="${LF:-32}"
+INITIAL_START_INDEX="${INITIAL_START_INDEX:-128}"
+INITIALIZATION_MODE="${INITIALIZATION_MODE:-direct_coarse_flow}" # or direct_coarse_impflow / blocked_native
+IMPROVED_FLOW_MAP="${IMPROVED_FLOW_MAP:-none}"
+# Leave blank for frozen defaults: L16->L32 a=1.02, delta=0.15;
+# L32->L64 a=1.03, delta=0.21; both use b=2.
+IMPROVED_BASE_SCALE="${IMPROVED_BASE_SCALE:-}"
+IMPROVED_TAIL_STRENGTH="${IMPROVED_TAIL_STRENGTH:-}"
+IMPROVED_TAIL_WIDTH="${IMPROVED_TAIL_WIDTH:-2.0}"
+RESUME_CHECKPOINT="${RESUME_CHECKPOINT:-}"
+UPDATE_MODE="${UPDATE_MODE:-coarse_detail}" # detail_only or coarse_detail
+DETAIL_SIGMA="${DETAIL_SIGMA:-0.1}"
+COARSE_SIGMA="${COARSE_SIGMA:-0.3}"
+DETAILS_PER_COARSE="${DETAILS_PER_COARSE:-1}"
+DETAIL_REPLICAS_PER_COARSE="${DETAIL_REPLICAS_PER_COARSE:-1}"
+COARSE_UPDATES_PER_SWEEP="${COARSE_UPDATES_PER_SWEEP:-1}"
+DIVIDE="${DIVIDE:-1}" # only 1 or 2
+COARSE_SOURCE="${COARSE_SOURCE:-auto}"
+NATIVE_SOURCE="${NATIVE_SOURCE:-auto}"
+KERNEL_PATH="${KERNEL_PATH:-perfect_blocking/perfect_blocking_lam1p0/kernels/final/chosen_kernel.json}"
+FLOW_CHECKPOINT="${FLOW_CHECKPOINT:-perfect_blocking_upsampling/runs/lam1p0/training/lam1p0_L16to32_newkernel_rqspline_N2000_action_lowtail_from_N2000_bestpatch_20260719T171401Z/checkpoints/checkpoint_best_patch.pt}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-auto}"
+RUN_LABEL="${RUN_LABEL:-auto}"
+
+EXECUTE=0
+BACKGROUND=0
+for arg in "$@"; do
+  case "$arg" in
+    --execute) EXECUTE=1 ;;
+    --background) BACKGROUND=1 ;;
+    *) printf 'usage: %s [--execute] [--background]\n' "$0" >&2; exit 2 ;;
+  esac
+done
+
+[[ "$DETAILS_PER_COARSE" =~ ^[1-9][0-9]*$ ]] || { printf 'DETAILS_PER_COARSE must be a positive integer\n' >&2; exit 2; }
+[[ "$DETAIL_REPLICAS_PER_COARSE" =~ ^[1-9][0-9]*$ ]] || { printf 'DETAIL_REPLICAS_PER_COARSE must be a positive integer\n' >&2; exit 2; }
+(( N_CHAINS % DETAIL_REPLICAS_PER_COARSE == 0 )) || { printf 'N_CHAINS=%s must be divisible by DETAIL_REPLICAS_PER_COARSE=%s\n' "$N_CHAINS" "$DETAIL_REPLICAS_PER_COARSE" >&2; exit 2; }
+N_UNIQUE_COARSE=$((N_CHAINS / DETAIL_REPLICAS_PER_COARSE))
+
+if [[ "$LC" == "8" && "$LF" == "16" ]]; then
+  DEFAULT_COARSE="data/configs_phi4_2d/lam1p0_kappac0p340301_L8/configs.npz"
+  DEFAULT_FINE="data/configs_phi4_2d/lam1p0_kappac0p340301_L16/configs.npz"
+elif [[ "$LC" == "16" && "$LF" == "32" ]]; then
+  DEFAULT_COARSE="data/configs_phi4_2d/lam1p0_kappac0p340301_L16/configs.npz"
+  DEFAULT_FINE="data/configs_phi4_2d/lam1p0_kappac0p340301_L32/configs.npz"
+elif [[ "$LC" == "32" && "$LF" == "64" ]]; then
+  DEFAULT_COARSE="data/configs_phi4_2d/lam1p0_kappac0p340301_L32/configs.npz"
+  DEFAULT_FINE="data/configs_phi4_2d/lam1p0_kappac0p340301_L64/configs.npz"
+else
+  printf 'supported pairs: L8->L16, L16->L32, L32->L64; got L%s->L%s\n' "$LC" "$LF" >&2
+  exit 2
+fi
+[[ "$COARSE_SOURCE" == "auto" ]] && COARSE_SOURCE="$DEFAULT_COARSE"
+[[ "$NATIVE_SOURCE" == "auto" ]] && NATIVE_SOURCE="$DEFAULT_FINE"
+[[ "$OUTPUT_ROOT" == "auto" ]] && OUTPUT_ROOT="perfect_blocking_upsampling/outputs/controlled_patch_lam1p0/mit_coordinate_mh_L${LC}to${LF}"
+if [[ "$RUN_LABEL" == "auto" ]]; then
+  if [[ "$UPDATE_MODE" == "detail_only" ]]; then
+    RUN_LABEL="coordinateMH_detailOnly"
+  else
+    RUN_LABEL="coordinateMH_coarseDetail"
+  fi
+  [[ "$INITIALIZATION_MODE" == "direct_coarse_impflow" ]] && RUN_LABEL="${RUN_LABEL}_improvedTail"
+fi
+
+PYTHON="../../.venv/bin/python"
+DRIVER="perfect_blocking_upsampling/scripts/run_lam1p0_mit_coordinate_mh_L8to16.py"
+for required in "$PYTHON" "$DRIVER" "$KERNEL_PATH" "$FLOW_CHECKPOINT" "$COARSE_SOURCE" "$NATIVE_SOURCE"; do
+  [[ -e "$required" ]] || { printf 'missing required path: %s\n' "$required" >&2; exit 1; }
+done
+
+STAMP="$(date +%Y%m%dT%H%M%SZ)"
+RUN_ID="mitcoord_bL${LF}_wrapped_RQS_cfg${INITIAL_START_INDEX}_N${N_CHAINS}_Dpc${DETAILS_PER_COARSE}_Rpc${DETAIL_REPLICAS_PER_COARSE}_S${N_SWEEPS}_${RUN_LABEL}_div${DIVIDE}_${STAMP}"
+RUN_DIR="$OUTPUT_ROOT/$RUN_ID"
+CMD=("$PYTHON" -B "$DRIVER" --run-dir "$RUN_DIR" --coarse-proposal-source "$COARSE_SOURCE" --native-reference-source "$NATIVE_SOURCE" --flow-checkpoint "$FLOW_CHECKPOINT" --kernel-path "$KERNEL_PATH" --from-L "$LC" --to-L "$LF" --n-chains "$N_CHAINS" --details-per-coarse "$DETAIL_REPLICAS_PER_COARSE" --detail-passes-per-sweep "$DETAILS_PER_COARSE" --n-sweeps "$N_SWEEPS" --save-sweeps "$SAVE_SWEEPS" --batch-size "$BATCH_SIZE" --seed "$SEED" --device "$DEVICE" --initial-start-index "$INITIAL_START_INDEX" --initialization "$INITIALIZATION_MODE" --improved-flow-map "$IMPROVED_FLOW_MAP" --improved-tail-width "$IMPROVED_TAIL_WIDTH" --update-mode "$UPDATE_MODE" --coarse-sigma "$COARSE_SIGMA" --coarse-updates-per-sweep "$COARSE_UPDATES_PER_SWEEP" --detail-sigma "$DETAIL_SIGMA" --divide "$DIVIDE")
+[[ -n "$IMPROVED_BASE_SCALE" ]] && CMD+=(--improved-base-scale "$IMPROVED_BASE_SCALE")
+[[ -n "$IMPROVED_TAIL_STRENGTH" ]] && CMD+=(--improved-tail-strength "$IMPROVED_TAIL_STRENGTH")
+if [[ -n "$RESUME_CHECKPOINT" ]]; then CMD+=(--resume-checkpoint "$RESUME_CHECKPOINT"); fi
+
+printf 'run directory: %s\ncommand: ' "$RUN_DIR"
+printf '%q ' "${CMD[@]}"
+printf '\n'
+printf 'total chains: %s; unique coarse fields: %s; sweep-zero detail replicas per coarse: %s; full detail passes per sweep: %s\n' "$N_CHAINS" "$N_UNIQUE_COARSE" "$DETAIL_REPLICAS_PER_COARSE" "$DETAILS_PER_COARSE"
+if [[ "$EXECUTE" == 0 ]]; then
+  printf 'Prepared only; add --execute to run.\n'
+  exit 0
+fi
+mkdir -p "$RUN_DIR/logs"
+printf 'command=' > "$RUN_DIR/submit_manifest.txt"
+printf '%q ' "${CMD[@]}" >> "$RUN_DIR/submit_manifest.txt"
+printf '\n' >> "$RUN_DIR/submit_manifest.txt"
+if [[ "$BACKGROUND" == 1 ]]; then
+  nohup "${CMD[@]}" > "$RUN_DIR/logs/run.log" 2>&1 &
+  printf '%s\n' "$!" > "$RUN_DIR/submit_pid.txt"
+  printf 'started background PID %s\n' "$!"
+else
+  exec "${CMD[@]}"
+fi
