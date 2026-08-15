@@ -84,15 +84,22 @@ def write_measurements(run: Path, main: list[dict], grows: list[dict]) -> None:
     write_csv(run / "observables" / "ensemble_average_history.csv", aggregate(main))
 
 
-def measure_phi(phi: np.ndarray, sweep: int, source_indices: np.ndarray) -> tuple[list[dict], list[dict]]:
+def measure_phi(
+    phi: np.ndarray, sweep: int, source_indices: np.ndarray, *, batch_size: int | None = None,
+) -> tuple[list[dict], list[dict]]:
     """Measurement rows with the same schema as the coordinate-MH outputs."""
     arr = np.asarray(phi, dtype=np.float32)
-    obs, g = per_config_observables(arr, ActionSpec("phi4_nn", 1.0, 0.340301))
     L = int(arr.shape[1]); main, grows = [], []
-    for chain in range(len(arr)):
-        common = {"chain_id": chain, "sweep": sweep, "source_config_index": int(source_indices[chain]), "source_native_L32_index": int(source_indices[chain]), "L": L, "volume": L * L}
-        main.append(common | {"action_density": float(obs["action_density"][chain]), "total_action": float(obs["total_action"][chain]), "phi2": float(obs["phi2"][chain]), "phi4": float(obs["phi4"][chain]), "NN": float(obs["NN"][chain]), "diag": float(obs["diag"][chain]), "2nn": float(obs["2nn"][chain]), "m": float(obs["m"][chain]), "m2": float(obs["m2"][chain]), "m4": float(obs["m4"][chain]), "G_pmin_x_cfg": float(g["G_10"][chain]), "G_pmin_y_cfg": float(g["G_01"][chain]), "nonfinite_count": int(np.sum(~np.isfinite(arr[chain])))} )
-        grows.append(common | {"G_00": float(g["G_00"][chain]), "G_10": float(g["G_10"][chain]), "G_01": float(g["G_01"][chain]), "G_pmin_avg": float(g["G_pmin_avg"][chain])})
+    chunk = batch_size or len(arr)
+    for begin in range(0, len(arr), chunk):
+        end = min(begin + chunk, len(arr))
+        obs, g = per_config_observables(
+            arr[begin:end], ActionSpec("phi4_nn", 1.0, 0.340301),
+        )
+        for local_chain, chain in enumerate(range(begin, end)):
+            common = {"chain_id": chain, "sweep": sweep, "source_config_index": int(source_indices[chain]), "source_native_L32_index": int(source_indices[chain]), "L": L, "volume": L * L}
+            main.append(common | {"action_density": float(obs["action_density"][local_chain]), "total_action": float(obs["total_action"][local_chain]), "phi2": float(obs["phi2"][local_chain]), "phi4": float(obs["phi4"][local_chain]), "NN": float(obs["NN"][local_chain]), "diag": float(obs["diag"][local_chain]), "2nn": float(obs["2nn"][local_chain]), "m": float(obs["m"][local_chain]), "m2": float(obs["m2"][local_chain]), "m4": float(obs["m4"][local_chain]), "G_pmin_x_cfg": float(g["G_10"][local_chain]), "G_pmin_y_cfg": float(g["G_01"][local_chain]), "nonfinite_count": int(np.sum(~np.isfinite(arr[chain])))} )
+            grows.append(common | {"G_00": float(g["G_00"][local_chain]), "G_10": float(g["G_10"][local_chain]), "G_01": float(g["G_01"][local_chain]), "G_pmin_avg": float(g["G_pmin_avg"][local_chain])})
     return main, grows
 
 
@@ -109,6 +116,14 @@ def main() -> int:
     p.add_argument("--n-sweeps", type=int, default=400, help="One sweep evolves every residue class once.")
     p.add_argument("--save-every", type=int, default=5)
     p.add_argument("--batch-size", type=int, default=50)
+    p.add_argument(
+        "--hmc-batch-size", type=int,
+        help="Chains evolved together within each HMC subtrajectory; defaults to --batch-size.",
+    )
+    p.add_argument(
+        "--measurement-batch-size", type=int,
+        help="Chains processed together for observables; defaults to --hmc-batch-size.",
+    )
     p.add_argument("--start-index", type=int, default=0)
     p.add_argument("--step-size", type=float, default=0.08)
     p.add_argument("--leapfrog-steps", type=int, default=10)
@@ -122,6 +137,14 @@ def main() -> int:
         raise ValueError("chain count, sweeps, save interval, step size, leapfrog steps, and divide must be positive")
     if a.smoke:
         a.n_chains, a.n_sweeps, a.save_every = min(a.n_chains, 4), min(a.n_sweeps, 3), 1
+    if a.hmc_batch_size is None:
+        a.hmc_batch_size = a.batch_size
+    if a.hmc_batch_size <= 0:
+        raise ValueError("--hmc-batch-size must be positive")
+    if a.measurement_batch_size is None:
+        a.measurement_batch_size = a.hmc_batch_size
+    if a.measurement_batch_size <= 0:
+        raise ValueError("--measurement-batch-size must be positive")
     if a.initialization == "direct_coarse_flow" and any(x is None for x in (a.coarse_source, a.flow_checkpoint, a.kernel_path)):
         raise ValueError("direct_coarse_flow requires --coarse-source, --flow-checkpoint, and --kernel-path")
     if a.initialization == "input" and a.input_source is None:
@@ -198,8 +221,8 @@ def main() -> int:
     (run / "run_config.yaml").write_text(json.dumps(config, indent=2, default=str) + "\n")
 
     sweep0 = int(a.sweep_offset)
-    main_rows, g_rows = measure_phi(phi, sweep0, source_indices)
-    native_rows, _ = measure_phi(native, 0, source_indices)
+    main_rows, g_rows = measure_phi(phi, sweep0, source_indices, batch_size=a.measurement_batch_size)
+    native_rows, _ = measure_phi(native, 0, source_indices, batch_size=a.measurement_batch_size)
     write_csv(run / "observables" / f"native_L{L}_reference_summary.csv", aggregate(native_rows))
     write_measurements(run, main_rows, g_rows)
     np.savez_compressed(run / "checkpoints" / f"checkpoint_sweep_{sweep0:04d}.npz", phi=phi)
@@ -209,16 +232,22 @@ def main() -> int:
     for sweep in range(1, a.n_sweeps + 1):
         accepted_this, delta_h_this = 0, []
         for _residue, active in sublattices:
-            phi, accepted, delta_h = hmc_trajectory(phi, active, action=action, step_size=a.step_size, n_steps=a.leapfrog_steps, rng=rng)
-            accepted_this += int(accepted.sum())
-            delta_h_this.append(delta_h)
+            for begin in range(0, a.n_chains, a.hmc_batch_size):
+                end = min(begin + a.hmc_batch_size, a.n_chains)
+                updated, accepted, delta_h = hmc_trajectory(
+                    phi[begin:end], active, action=action,
+                    step_size=a.step_size, n_steps=a.leapfrog_steps, rng=rng,
+                )
+                phi[begin:end] = updated
+                accepted_this += int(accepted.sum())
+                delta_h_this.append(delta_h)
         accepted_total += accepted_this
         all_delta_h = np.concatenate(delta_h_this)
         attempted_total = sweep * len(sublattices) * a.n_chains
         acc_rows.append({"sweep": sweep, "subtrajectories": len(sublattices), "active_sites_per_subtrajectory": int(sublattices[0][1].sum()), "accepted": accepted_this, "attempted": len(sublattices) * a.n_chains, "acceptance": accepted_this / (len(sublattices) * a.n_chains), "acceptance_cumulative": accepted_total / attempted_total, "mean_delta_H": float(all_delta_h.mean()), "std_delta_H": float(all_delta_h.std(ddof=1))})
         absolute_sweep = sweep0 + sweep
         if sweep % a.save_every == 0 or sweep == a.n_sweeps:
-            rows, grows = measure_phi(phi, absolute_sweep, source_indices)
+            rows, grows = measure_phi(phi, absolute_sweep, source_indices, batch_size=a.measurement_batch_size)
             main_rows.extend(rows); g_rows.extend(grows)
             write_measurements(run, main_rows, g_rows)
             np.savez_compressed(run / "checkpoints" / f"checkpoint_sweep_{absolute_sweep:04d}.npz", phi=phi)
