@@ -1,0 +1,4 @@
+reference_id,kind,lambda,L,kappa,n_configs,path,observable_summary_path,notes
+REF-PHI4-L64-K340301,native direct ensemble,1.0,64,0.340301,5000,data/configs_phi4_2d/lam1p0_kappac0p340301_L64/configs.npz,data/configs_phi4_2d/lam1p0_kappac0p340301_L64/native_L64_all_observables_per_config_observable_summary_with_chi.csv,Reference for this study; generated with the native Wolff+radial workflow.
+REF-PHI4-L32-K340301,native direct ensemble,1.0,32,0.340301,10000,data/configs_phi4_2d/lam1p0_kappac0p340301_L32/configs.npz,data/configs_phi4_2d/lam1p0_kappac0p340301_L32/lam1p0_kappac0p340301_L32_observable_summary_with_chi.csv,Reference for CASCADE-WOLFF-LAM1 first level.
+REF-PHI4-L128-K340301,native direct ensemble,1.0,128,0.340301,5000,data/configs_phi4_2d/lam1p0_kappac0p340301_L128/configs.npz,,Reference for CASCADE-WOLFF-LAM1 L64-to-L128 level; measure observables directly from configs.npz because no precomputed summary is stored.

@@ -21,7 +21,7 @@ from scipy.special import logsumexp
 
 ROOT = Path(__file__).resolve().parents[2]
 FIT_SCRIPT = ROOT / "perfect_blocking/scripts/fit_lam1p0_blocked_action_relative_entropy.py"
-DEFAULT_OUT = ROOT / "perfect_blocking/perfect_blocking_lam1p0/tests/softcond7_blocked_action_relative_entropy"
+DEFAULT_OUT = ROOT / "perfect_blocking/perfect_blocking_lam1p0/tests/archive_superseded_kernel_explorations_20260818/softcond7_blocked_action_relative_entropy"
 
 
 def load_fit_module():

@@ -1,0 +1,7 @@
+analysis_id,run_ids,role,combine_rule,reference_id,notes
+THERM-L64-HMC-SAME,HMC-L64-006,HMC same-kappa,none,REF-PHI4-L64-K340301,Primary HMC same-kappa comparison.
+THERM-L64-HMC-OFF,HMC-L64-001;HMC-L64-002,HMC offcritical source,Concatenate the independent r1 and r2 chains at each matching checkpoint,REF-PHI4-L64-K340301,Same fine target as THERM-L64-HMC-SAME.
+THERM-L64-HMC-KF340200,HMC-L64-003,HMC alternate fine target,none,REF-PHI4-L64-K340301,Target differs from reference; included as a kappa control.
+THERM-L64-HMC-KF340340,HMC-L64-011,HMC alternate fine target,none,REF-PHI4-L64-K340301,Target differs from reference; included as a kappa control.
+THERM-L64-WOLFF-SAME,WOLFF-L64-001,Wolff+radial same-kappa,none,REF-PHI4-L64-K340301,Primary Wolff comparison.
+THERM-L64-WOLFF-OFF,WOLFF-L64-002,Wolff+radial offcritical source,already combined N=3000 input,REF-PHI4-L64-K340301,Same fine target as the primary HMC comparison.

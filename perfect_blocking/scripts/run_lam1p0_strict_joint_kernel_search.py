@@ -9,7 +9,7 @@ HERE=Path(__file__).resolve(); ROOT=HERE.parents[1]; PROJECT=ROOT.parent
 joint_path=HERE.with_name('run_lam1p0_joint_operator_kernel_search.py')
 spec=importlib.util.spec_from_file_location('joint_search',joint_path); mod=importlib.util.module_from_spec(spec); sys.modules[spec.name]=mod; spec.loader.exec_module(mod)
 base=mod.base
-tag='strict_joint_kernel_train3000_val1000_test1000'; out=base.LAM_ROOT/'tests/intermediate'/tag
+tag='strict_joint_kernel_train3000_val1000_test1000'; out=base.LAM_ROOT/'tests/intermediate/archive_superseded_kernel_searches_20260818'/tag
 base.OUT=out; base.CAND_DIR=base.LAM_ROOT/'kernels/candidates'/tag; base.FINAL=base.LAM_ROOT/'tests/final'/tag
 rng=np.random.default_rng(20260807)
 direct_all=base.load_configs(base.DIRECT); fine_all=base.load_configs(base.FINE)

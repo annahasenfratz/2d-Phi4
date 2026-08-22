@@ -30,8 +30,14 @@ Path(os.environ["MPLCONFIGDIR"]).mkdir(parents=True, exist_ok=True)
 
 from perfect_blocking_upsampling.actions import ActionSpec, action_total  # noqa: E402
 from perfect_blocking_upsampling.kernels import load_kernel as load_kernel_spec  # noqa: E402
-from run_lam0p2_flow_detail_rethermalization import PATCH_HISTORY_FIELDS  # noqa: E402
-from run_lam0p2_residual_flow_patch_chain import StreamingCsv, patch_correct  # noqa: E402
+# The historical lam0p2 helper was removed during the cleanup.  This trainer
+# only needs this stable patch-diagnostic CSV schema, not its runtime code.
+PATCH_HISTORY_FIELDS = [
+    "sweep", "phase", "patch_size", "pass", "patch_index", "patch_x", "patch_y",
+    "attempts", "accepted", "acceptance", "A_over_R", "deltaS_mean", "deltaS_std",
+    "deltaS_min", "deltaS_max", "delta_logw_mean", "delta_logw_std", "log_accept_mean",
+    "log_accept_std", "patch_l2_mean", "local_rms", "elapsed_sec",
+]
 from run_lam1p0_l16to32_rqspline_zeroshot import (  # noqa: E402
     AffineARDetailFlow,
     ResidualSplineARDetailFlow,
@@ -54,8 +60,6 @@ from train_lam1p0_flow_detail_pilot import (  # noqa: E402
     write_csv,
     write_json,
 )
-
-
 OBS_KEYS = ["action_density", "phi2", "phi4", "local_kurtosis_ratio", "NN", "2nn", "diag", "m2", "m4", "G_pmin_avg"]
 
 
@@ -443,6 +447,32 @@ def local_patch_diag(
     epoch: int,
     label: str,
 ) -> dict[str, Any]:
+    # The historical lam0p2 patch updater was intentionally removed in the
+    # repository cleanup.  This is a post-training diagnostic only; it is not
+    # part of the conditional-NLL objective or of checkpoint selection.  Keep
+    # its absence visible in the output rather than making a pure-NLL training
+    # run fail before its first epoch.
+    return {
+        "epoch": epoch,
+        "checkpoint": label,
+        "diagnostic_type": "local_patchwise_detail",
+        "status": "skipped",
+        "reason": "historical_lam0p2_patch_updater_not_available",
+        # Neutral values preserve the historical CSV/reporting schema.  Since
+        # both source and epoch records are skipped, this cannot favour or
+        # reject an NLL checkpoint in the patch-eligibility side diagnostic.
+        "acceptance": 1.0,
+        "attempts": 0,
+        "accepted": 0,
+        "DeltaS_mean": float("nan"),
+        "logA_mean": float("nan"),
+        "reblocking_max_error": float("nan"),
+        "nonfinite_count": 0,
+        "max_abs_z_initial": float("nan"),
+    }
+
+    # Retained below as the implementation reference if this diagnostic is
+    # restored with a maintained patch updater.
     n = min(args.local_chains, len(coarse))
     device = torch.device(args.device)
     detail, _logq, zmax, _logdet = sample_model_lattice(model, coarse[:n], stats, batch_size=args.batch_size, device=device, seed=args.random_seed + 50000 + epoch)

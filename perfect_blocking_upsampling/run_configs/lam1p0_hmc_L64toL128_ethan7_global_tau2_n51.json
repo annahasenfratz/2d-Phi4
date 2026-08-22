@@ -1,0 +1,24 @@
+{
+  "lambda": 1.0,
+  "kappa": 0.340301,
+  "n_chains": 1500,
+  "start_index": 0,
+  "batch_size": 25,
+  "seed": 2026081902,
+  "initial_source": "perfect_blocking_upsampling/outputs/hmc_upscale_chain_lam1p0/L32toL64/L32toL64_ethan7_N1500_S100_global_tau2_n36_eps2over36_r1/levels/L32toL64/final_phi.npz",
+  "levels": [
+    {
+      "to_L": 128,
+      "thermalization_sweeps": 100,
+      "measure_every": 1,
+      "checkpoint_every": 5,
+      "hmc_batch_size": 25,
+      "stream_initialization": true,
+      "divide": 1,
+      "step_size": 0.0392156862745098,
+      "leapfrog_steps": 51,
+      "flow_checkpoint": "perfect_blocking_upsampling/runs/lam1p0/training/lam1p0_L16to32_ethan7_fresh_pureNLL_control_N10000_20260818T050235Z/stage_oo/checkpoints/checkpoint_best_nll.pt",
+      "kernel_path": "perfect_blocking/perfect_blocking_lam1p0/kernels/selected_for_upscaling/ethan_7x7_paper_objective_eta_included.json"
+    }
+  ]
+}

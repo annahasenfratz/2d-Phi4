@@ -1,0 +1,2 @@
+analysis_id,run_ids,role,reference_id,notes
+ETA-FREE-ETHAN7-LAM1,KERNEL-ETA-FREE-ETHAN7-001,free-eta 7x7 diagnostic,REF-PHI4-L16-K340301,Uses the same 9000 L32-to-L16 training split and 1000 held-out L32-to-L16 plus L64-to-L32 tests recorded in result.json.

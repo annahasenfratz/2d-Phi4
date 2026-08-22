@@ -34,7 +34,7 @@ from scripts.run_lam1p0_7x7_kernel_search import observable_arrays  # noqa: E402
 DIRECT_DEFAULT = ROOT / "data/configs_phi4_2d/lam1p0_kappac0p340301_L16/configs.npz"
 FINE_DEFAULT = ROOT / "data/configs_phi4_2d/lam1p0_kappac0p340301_L32/configs.npz"
 KERNEL_DEFAULT = ROOT / "perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/allL16_chi2_R3_soft_conditioned_7x7_eta_included.json"
-OUT_DEFAULT = ROOT / "perfect_blocking/perfect_blocking_lam1p0/tests/softcond7_blocked_action_relative_entropy"
+OUT_DEFAULT = ROOT / "perfect_blocking/perfect_blocking_lam1p0/tests/archive_superseded_kernel_explorations_20260818/softcond7_blocked_action_relative_entropy"
 
 # These are local, extensive-action densities.  The first six include the
 # usual phi^4 action and its leading local extensions; the last four are the

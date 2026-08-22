@@ -3,8 +3,8 @@
 # Usage: bash $0 [--execute] [--background]
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"; PYTHON="$ROOT/../../.venv/bin/python"
-SOURCE="${SOURCE:-$ROOT/perfect_blocking/perfect_blocking_lam1p0/tests/softcond7_blocked_action_relative_entropy_highfield15}"
-OUT="${OUT:-$ROOT/perfect_blocking/perfect_blocking_lam1p0/tests/softcond7_blocked_action_correlation_regularized}"
+SOURCE="${SOURCE:-$ROOT/perfect_blocking/perfect_blocking_lam1p0/tests/archive_superseded_kernel_explorations_20260818/softcond7_blocked_action_relative_entropy_highfield15}"
+OUT="${OUT:-$ROOT/perfect_blocking/perfect_blocking_lam1p0/tests/archive_superseded_kernel_explorations_20260818/softcond7_blocked_action_correlation_regularized}"
 CORRELATION_WEIGHT="${CORRELATION_WEIGHT:-0.01}"; EPOCHS="${EPOCHS:-1000}"; EXECUTE=0; BACKGROUND=0
 for arg in "$@"; do case "$arg" in --execute) EXECUTE=1;; --background) BACKGROUND=1;; *) echo "usage: $0 [--execute] [--background]" >&2; exit 2;; esac; done
 [[ "$BACKGROUND" -eq 0 || "$EXECUTE" -eq 1 ]] || { echo "--background requires --execute" >&2; exit 2; }

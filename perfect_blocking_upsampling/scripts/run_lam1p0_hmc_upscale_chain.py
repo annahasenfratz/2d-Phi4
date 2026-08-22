@@ -27,6 +27,28 @@ def resolve(value: str) -> Path:
     return path if path.is_absolute() else ROOT / path
 
 
+def expose_single_level_compatibility_paths(level_run: Path) -> None:
+    """Expose the conventional single-level layout at the chain root.
+
+    The chain driver stores each level below ``levels/L{coarse}toL{fine}``,
+    whereas the existing plotting notebooks expect ``run_config.yaml``,
+    ``observables/``, and ``checkpoints/`` directly below the run directory.
+    Relative symlinks preserve one source of truth and update while a run is
+    still writing measurements.
+    """
+    chain_run = level_run.parent.parent
+    relative_level = Path("levels") / level_run.name
+    for name, target in (
+        ("run_config.yaml", relative_level / "run_config.yaml"),
+        ("config.yaml", relative_level / "config.yaml"),
+        ("observables", relative_level / "observables"),
+        ("checkpoints", relative_level / "checkpoints"),
+    ):
+        link = chain_run / name
+        if not link.exists() and not link.is_symlink():
+            link.symlink_to(target, target_is_directory=name in {"observables", "checkpoints"})
+
+
 def run_level(phi_coarse: np.ndarray, level: dict, *, root: Path, common: dict, action: ActionSpec, source_indices: np.ndarray, level_seed: int) -> np.ndarray:
     lc = int(phi_coarse.shape[1]); lf = int(level["to_L"])
     if lf != 2 * lc:
@@ -37,6 +59,7 @@ def run_level(phi_coarse: np.ndarray, level: dict, *, root: Path, common: dict, 
     run = root / f"L{lc}toL{lf}"
     for name in ("observables", "checkpoints", "summaries", "logs"):
         (run / name).mkdir(parents=True, exist_ok=True)
+    expose_single_level_compatibility_paths(run)
     flow_path, kernel_path = resolve(level["flow_checkpoint"]), resolve(level["kernel_path"])
     kernel, kernel_meta = load_kernel_matrix(kernel_path)
     if not bool(kernel_meta.get("kernel_coefficients_include_eta_scale", False)):
@@ -100,7 +123,9 @@ def run_level(phi_coarse: np.ndarray, level: dict, *, root: Path, common: dict, 
     # whereas early chained runs used run_config.yaml.
     (run / "run_config.yaml").write_text(config_text)
     (run / "config.yaml").write_text(config_text)
-    main, grows = measure_phi(phi, 0, source_indices); write_measurements(run, main, grows)
+    # At L512 the ensemble can be a disk-backed memmap.  Measure in the same
+    # bounded chunks used for flow sampling rather than materializing it.
+    main, grows = measure_phi(phi, 0, source_indices, action=action, batch_size=flow_batch); write_measurements(run, main, grows)
     np.savez_compressed(run / "checkpoints" / "checkpoint_sweep_0000.npz", phi=phi)
     acc_rows, accepted_total = [], 0
     for sweep in range(1, sweeps + 1):
@@ -113,13 +138,16 @@ def run_level(phi_coarse: np.ndarray, level: dict, *, root: Path, common: dict, 
         accepted_total += accepts; dh = np.concatenate(dh_all); attempted = sweep * len(sublattices) * len(phi)
         acc_rows.append({"sweep": sweep, "subtrajectories": len(sublattices), "active_sites_per_subtrajectory": int(sublattices[0][1].sum()), "accepted": accepts, "attempted": len(sublattices) * len(phi), "acceptance": accepts / (len(sublattices) * len(phi)), "acceptance_cumulative": accepted_total / attempted, "mean_delta_H": float(dh.mean()), "std_delta_H": float(dh.std(ddof=1))})
         if sweep % measure_every == 0 or sweep == sweeps:
-            rows, gs = measure_phi(phi, sweep, source_indices); main.extend(rows); grows.extend(gs); write_measurements(run, main, grows)
+            rows, gs = measure_phi(phi, sweep, source_indices, action=action, batch_size=flow_batch); main.extend(rows); grows.extend(gs); write_measurements(run, main, grows)
         if sweep % checkpoint_every == 0 or sweep == sweeps:
             np.savez_compressed(run / "checkpoints" / f"checkpoint_sweep_{sweep:04d}.npz", phi=phi)
         write_csv(run / "observables" / "acceptance_history.csv", acc_rows, ACCEPT_COLUMNS)
         print(json.dumps({"level": f"L{lc}toL{lf}", "sweep": sweep, "acceptance_cumulative": accepted_total / attempted}), flush=True)
     np.savez_compressed(run / "final_phi.npz", phi=phi, source_indices=source_indices)
-    write_json(run / "summaries" / "run_summary.json", {"status": "completed", "acceptance": accepted_total / (sweeps * len(sublattices) * len(phi)), "final_field": str(run / "final_phi.npz")})
+    # A zero-sweep level is a deliberate, flow-only initialization.  It has
+    # no HMC proposals, so acceptance is undefined rather than zero.
+    acceptance = None if sweeps == 0 else accepted_total / (sweeps * len(sublattices) * len(phi))
+    write_json(run / "summaries" / "run_summary.json", {"status": "completed", "acceptance": acceptance, "final_field": str(run / "final_phi.npz")})
     return phi
 
 
@@ -140,7 +168,10 @@ def main() -> int:
     action = ActionSpec("phi4_nn", float(cfg["lambda"]), float(cfg["kappa"])); source_indices = np.arange(start, start+n, dtype=np.int64)
     write_json(run / "chain_config.json", cfg | {"initial_source_resolved": str(resolve(cfg["initial_source"]))})
     t0 = time.perf_counter()
-    for i, level in enumerate(cfg["levels"]): phi = run_level(phi, level, root=run / "levels", common=common, action=action, source_indices=source_indices, level_seed=int(cfg["seed"]) + i)
+    # Offset stochastic flow/HMC streams by the source slice.  This keeps
+    # separately launched shards statistically independent while preserving
+    # the original stream for the default start_index=0 case.
+    for i, level in enumerate(cfg["levels"]): phi = run_level(phi, level, root=run / "levels", common=common, action=action, source_indices=source_indices, level_seed=int(cfg["seed"]) + start + i)
     np.savez_compressed(run / "final_phi.npz", phi=phi, source_indices=source_indices)
     write_json(run / "status.json", {"status": "completed", "final_L": int(phi.shape[1]), "runtime_sec": time.perf_counter() - t0, "final_field": str(run / "final_phi.npz")})
     return 0

@@ -1,0 +1,51 @@
+{
+  "name": "ethan_7x7_paper_objective_eta_included",
+  "type": "matrix",
+  "description": "D4-symmetric 7x7 blocking kernel trained on L32-to-L16 HMC ensembles with local-operator matching and an inverse-kernel locality penalty.",
+  "lambda": 1.0,
+  "kappa_f": 0.340301,
+  "kappa_c": 0.340301,
+  "eta": 0.25,
+  "eta_scale_numeric": 1.0905077326652577,
+  "kernel_coefficients_include_eta_scale": true,
+  "normalization_note": "The supplied nine-decimal coefficients sum to 1.090507726. The matrix stores a +6.6652577e-9 correction to its central entry so that machine readers enforcing exact eta normalization obtain sum(K)=2^(eta/2). The tabulated orbit coefficients remain Ethan's supplied values. Do not apply the eta scale again.",
+  "matrix_normalization_correction_to_K00": 6.665257679590385e-09,
+  "training_summary": {
+    "fine_to_coarse": "L32 to L16",
+    "operator_set": ["phi2", "phi4", "phi6", "NN", "2nn", "diag", "m2", "G21", "G22", "G30", "G31"],
+    "inverse_locality_penalty_mu": 30.0,
+    "inverse_locality_box": "5x5"
+  },
+  "orbit_multiplicities": {
+    "00": 1, "10": 4, "11": 4, "20": 4, "21": 8,
+    "22": 4, "30": 4, "31": 8, "32": 8, "33": 4
+  },
+  "orbit_coefficients_eta_included": {
+    "00": 0.888641822,
+    "10": 0.010508374,
+    "11": -0.066254410,
+    "20": 0.037116968,
+    "21": 0.022657096,
+    "22": -0.001649881,
+    "30": 0.020222068,
+    "31": 0.007299892,
+    "32": -0.003848342,
+    "33": -0.001693935
+  },
+  "matrix": [
+    [-0.001693935, -0.003848342, 0.007299892, 0.020222068, 0.007299892, -0.003848342, -0.001693935],
+    [-0.003848342, -0.001649881, 0.022657096, 0.037116968, 0.022657096, -0.001649881, -0.003848342],
+    [0.007299892, 0.022657096, -0.066254410, 0.010508374, -0.066254410, 0.022657096, 0.007299892],
+    [0.020222068, 0.037116968, 0.010508374, 0.8886418286652577, 0.010508374, 0.037116968, 0.020222068],
+    [0.007299892, 0.022657096, -0.066254410, 0.010508374, -0.066254410, 0.022657096, 0.007299892],
+    [-0.003848342, -0.001649881, 0.022657096, 0.037116968, 0.022657096, -0.001649881, -0.003848342],
+    [-0.001693935, -0.003848342, 0.007299892, 0.020222068, 0.007299892, -0.003848342, -0.001693935]
+  ],
+  "momentum_stability": {
+    "min_K": 0.5437241259999998,
+    "max_K": 1.243904414,
+    "min_inverse_K": 0.803920292222711,
+    "max_inverse_K": 1.8391679754155335,
+    "condition_number": 2.2877491627068256
+  }
+}

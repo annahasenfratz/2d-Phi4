@@ -1,5 +1,82 @@
 # Handoff — 15 Aug 2026: HMC upscaling and large-volume checks
 
+## Update — 16 Aug 2026: global HMC L512 thermalization check
+
+### Completed sweep-zero L256 -> L512 ensemble
+
+The chained flow initialization from the **thermalized** L256 HMC ensemble is
+complete (1,500 configurations). It used the active iteration-5 flow/kernel
+pair below and no HMC at this stage.
+
+```text
+run: perfect_blocking_upsampling/outputs/hmc_upscale_chain_lam1p0/L256toL512/
+     L256toL512_N1500_from_rethermed_L256_zero_sweep_flow/
+disk-backed source: levels/L256toL512/checkpoints/initialization_phi.npy
+portable checkpoint: levels/L256toL512/checkpoints/checkpoint_sweep_0000.npz
+```
+
+The `.npy` file is a disk-backed memmap. Do **not** pass the 1.3-GB compressed
+`.npz` to a large HMC job: that would decompress the full L512 ensemble into
+memory. The new launcher reads only a selected chunk from the `.npy` source.
+
+### L512 pilot and production thermalization parameters
+
+The N=25 L256->L512 pilot with global direct fine-field HMC had stable
+acceptance near the intended target (about 84% through sweep 65). Use global
+physical-field HMC with `divide=1`, `epsilon=0.020`, `n_leapfrog=100`, and
+`tau=2.0`.
+
+The full N=1500 thermalization check is set up as 60 **sequential** chunks of
+25 fields. Each chunk keeps only those 25 L512 fields in RAM, retains small
+observable/acceptance CSV histories, and writes only `final_phi.npz` upon
+successful completion. There are no intermediate full configuration
+checkpoints; an interruption loses only the active chunk.
+
+```bash
+bash perfect_blocking_upsampling/scripts/run_lam1p0_global_hmc_L256toL512_thermal_check_all_chunks.sh --execute
+```
+
+The individual launcher is
+`submit_lam1p0_global_hmc_L256toL512_thermal_check_chunk.sh CHUNK_NUMBER`.
+Completed chunks are skipped by the sequential driver. The full L512 check is
+set up but had not been launched when this note was updated.
+
+`run_lam1p0_fine_hmc.py` now accepts `.npy` input as a read-only memmap. Its
+`--final-config-only` option still saves measurements but suppresses
+sweep-zero/intermediate/latest HMC configuration checkpoints and writes
+`final_phi.npz` at completion.
+
+### Global-HMC step-size record
+
+| transition | fine L | epsilon | leapfrogs | final acceptance |
+|---|---:|---:|---:|---:|
+| L16 -> L32 | 32 | 2/28 | 28 | 86.3% |
+| L32 -> L64 | 64 | 2/35 | 35 | 82.9% |
+| L64 -> L128 | 128 | 2/50 | 50 | 83.1% |
+| L128 -> L256 | 256 | 2/70 | 70 | 82.8% |
+| L256 -> L512 pilot | 512 | 2/100 | 100 | ~84% during run |
+
+The trend is consistent with `epsilon ~ V^(-1/4) = L^(-1/2)`; its coefficient
+is empirical and may change away from criticality.
+
+### Time Capsule backup (operational state)
+
+The first `/Users/anna/Work` backup is snapshot
+`/Volumes/Data/Research_Backups/Work/snapshots/20260815_104846`. The initial
+copy stopped because the AFP-mounted Time Capsule does not support Unix hard
+links requested by `rsync -H`. It is being resumed in place, without hard-link
+preservation, in screen session `work_time_capsule_backup_resume`:
+
+```bash
+bash scripts/backup_work_to_time_capsule.sh --resume-stamp 20260815_104846
+```
+
+Do not regard the backup as complete until that snapshot contains
+`BACKUP_MANIFEST.txt` and `/Volumes/Data/Research_Backups/Work/latest` points
+to it. The backup script now avoids `-H` and `--link-dest` on this AFP share.
+Versioned snapshot retention needs a later design that does not depend on
+filesystem hard links.
+
 ## Reboot status
 
 There are **no incomplete production runs requiring continuation**.  The following recently watched runs are complete:

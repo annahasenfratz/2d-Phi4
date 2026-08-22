@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fine-field HMC thermalization for lambda=1, kappa=0.340301.
+"""Fine-field HMC thermalization for configurable lambda=1 target kappa.
 
 The Markov state is the physical fine lattice field phi, not a blocked
 coordinate state.  Every trajectory therefore targets exp[-S_f(phi)] directly
@@ -8,6 +8,7 @@ and never applies K^{-1} after the sweep-zero flow initialization.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import sys
 import time
@@ -84,8 +85,14 @@ def write_measurements(run: Path, main: list[dict], grows: list[dict]) -> None:
     write_csv(run / "observables" / "ensemble_average_history.csv", aggregate(main))
 
 
+def read_csv_rows(path: Path) -> list[dict]:
+    with path.open(newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
 def measure_phi(
-    phi: np.ndarray, sweep: int, source_indices: np.ndarray, *, batch_size: int | None = None,
+    phi: np.ndarray, sweep: int, source_indices: np.ndarray, *, action: ActionSpec,
+    batch_size: int | None = None,
 ) -> tuple[list[dict], list[dict]]:
     """Measurement rows with the same schema as the coordinate-MH outputs."""
     arr = np.asarray(phi, dtype=np.float32)
@@ -94,7 +101,7 @@ def measure_phi(
     for begin in range(0, len(arr), chunk):
         end = min(begin + chunk, len(arr))
         obs, g = per_config_observables(
-            arr[begin:end], ActionSpec("phi4_nn", 1.0, 0.340301),
+            arr[begin:end], action,
         )
         for local_chain, chain in enumerate(range(begin, end)):
             common = {"chain_id": chain, "sweep": sweep, "source_config_index": int(source_indices[chain]), "source_native_L32_index": int(source_indices[chain]), "L": L, "volume": L * L}
@@ -112,9 +119,17 @@ def main() -> int:
     p.add_argument("--kernel-path", type=Path)
     p.add_argument("--initialization", choices=("direct_coarse_flow", "native", "input"), default="direct_coarse_flow")
     p.add_argument("--input-source", type=Path, help="Existing fine phi checkpoint used when --initialization input.")
+    p.add_argument(
+        "--input-scale", type=float, default=1.0,
+        help="Uniform multiplicative factor applied to an input-initialized fine field before sweep zero.",
+    )
     p.add_argument("--n-chains", type=int, default=500)
     p.add_argument("--n-sweeps", type=int, default=400, help="One sweep evolves every residue class once.")
     p.add_argument("--save-every", type=int, default=5)
+    p.add_argument(
+        "--final-config-only", action="store_true",
+        help="Keep observable histories but write no HMC checkpoints; save only final_phi.npz at completion.",
+    )
     p.add_argument("--batch-size", type=int, default=50)
     p.add_argument(
         "--hmc-batch-size", type=int,
@@ -129,12 +144,24 @@ def main() -> int:
     p.add_argument("--leapfrog-steps", type=int, default=10)
     p.add_argument("--divide", type=int, default=2, help="Uniform residue grid: divide=2 evolves 16^2 sites per L32 subtrajectory.")
     p.add_argument("--seed", type=int, default=2026081301)
+    p.add_argument(
+        "--kappa", type=float, default=0.340301,
+        help="Target fine-theory hopping parameter (default: 0.340301).",
+    )
+    p.add_argument(
+        "--kappa-coarse", type=float,
+        help="Optional source/coarse hopping parameter recorded for provenance.",
+    )
     p.add_argument("--sweep-offset", type=int, default=0, help="Label sweep zero as this absolute sweep number (useful for continuations).")
+    p.add_argument(
+        "--append", action="store_true",
+        help="Append a continuation to an existing run; --sweep-offset must equal its latest saved sweep.",
+    )
     p.add_argument("--level-name", default="L16toL32", help="Name exposed under run-dir/levels for notebook compatibility.")
     p.add_argument("--smoke", action="store_true")
     a = p.parse_args()
-    if a.n_chains <= 0 or a.n_sweeps <= 0 or a.save_every <= 0 or a.step_size <= 0 or a.leapfrog_steps <= 0 or a.divide <= 0:
-        raise ValueError("chain count, sweeps, save interval, step size, leapfrog steps, and divide must be positive")
+    if a.n_chains <= 0 or a.n_sweeps <= 0 or a.save_every <= 0 or a.step_size <= 0 or a.leapfrog_steps <= 0 or a.divide <= 0 or not np.isfinite(a.input_scale) or a.input_scale <= 0.0 or not np.isfinite(a.kappa):
+        raise ValueError("chain count, sweeps, save interval, step size, leapfrog steps, divide, input scale, and kappa must be finite (positive where applicable)")
     if a.smoke:
         a.n_chains, a.n_sweeps, a.save_every = min(a.n_chains, 4), min(a.n_sweeps, 3), 1
     if a.hmc_batch_size is None:
@@ -149,6 +176,8 @@ def main() -> int:
         raise ValueError("direct_coarse_flow requires --coarse-source, --flow-checkpoint, and --kernel-path")
     if a.initialization == "input" and a.input_source is None:
         raise ValueError("input initialization requires --input-source")
+    if a.final_config_only and a.append:
+        raise ValueError("--final-config-only cannot be combined with --append (it writes no restart checkpoint)")
     if a.initialization != "input" and a.native_source is None:
         raise ValueError("native/direct_coarse_flow initialization requires --native-source")
 
@@ -165,17 +194,24 @@ def main() -> int:
     if not level_link.exists() and not level_link.is_symlink():
         level_link.symlink_to("..", target_is_directory=True)
     if a.initialization == "input":
-        input_all = load_phi(a.input_source)
+        # A sweep-zero .npy generated by the streamed upscaler is a memmap.
+        # Slice and copy just this HMC chunk, never decompress the full L512
+        # ensemble into RAM.
+        if a.input_source.suffix == ".npy":
+            input_all = np.load(a.input_source, mmap_mode="r")
+        else:
+            input_all = load_phi(a.input_source)
         if a.start_index + a.n_chains > len(input_all):
             raise ValueError("not enough input fine configurations for requested start index/count")
         native = input_all[a.start_index:a.start_index + a.n_chains].astype(np.float32)
+        native *= np.float32(a.input_scale)
     else:
         native_all = load_phi(a.native_source)
         if a.start_index + a.n_chains > len(native_all):
             raise ValueError("not enough native fine configurations for requested start index/count")
         native = native_all[a.start_index:a.start_index + a.n_chains].astype(np.float32)
     source_indices = np.arange(a.start_index, a.start_index + a.n_chains, dtype=np.int64)
-    action = ActionSpec("phi4_nn", 1.0, 0.340301)
+    action = ActionSpec("phi4_nn", 1.0, float(a.kappa))
     L = int(native.shape[1])
     if L % a.divide:
         raise ValueError(f"fine L={L} must be divisible by --divide={a.divide}")
@@ -185,10 +221,11 @@ def main() -> int:
 
     config = vars(a).copy() | {
         "lambda": 1.0,
-        "kappa": 0.340301,
+        "kappa": float(a.kappa),
         # Compatibility aliases for the established coordinate-MH notebooks.
-        "kappa_f": 0.340301,
-        "kappa_c": 0.340301,
+        "kappa_f": float(a.kappa),
+        # This is provenance only: HMC always evolves the fine target above.
+        "kappa_c": float(a.kappa_coarse) if a.kappa_coarse is not None else None,
         "native_reference_source": str(a.native_source) if a.native_source else None,
         "target": "exp(-S_f(phi))",
         "integrator": "second-order leapfrog",
@@ -201,6 +238,7 @@ def main() -> int:
         config["flow_used_at_sweep_zero"] = False
         if a.initialization == "input":
             config["input_source"] = str(a.input_source)
+            config["input_scale"] = float(a.input_scale)
     else:
         coarse_all = load_phi(a.coarse_source)
         if a.start_index + a.n_chains > len(coarse_all):
@@ -217,17 +255,38 @@ def main() -> int:
         phi, _ = inverse_kernel(assemble_psi(coarse, detail), kernel)
         phi = np.asarray(phi, dtype=np.float32)
         config |= {"kernel_metadata": kernel_meta, "flow_load_report": report, "flow_used_at_sweep_zero": True, "flow_used_after_sweep_zero": False}
-    write_json(run / "run_config.json", config)
-    (run / "run_config.yaml").write_text(json.dumps(config, indent=2, default=str) + "\n")
-
     sweep0 = int(a.sweep_offset)
-    main_rows, g_rows = measure_phi(phi, sweep0, source_indices, batch_size=a.measurement_batch_size)
-    native_rows, _ = measure_phi(native, 0, source_indices, batch_size=a.measurement_batch_size)
-    write_csv(run / "observables" / f"native_L{L}_reference_summary.csv", aggregate(native_rows))
-    write_measurements(run, main_rows, g_rows)
-    np.savez_compressed(run / "checkpoints" / f"checkpoint_sweep_{sweep0:04d}.npz", phi=phi)
-    acc_rows: list[dict] = []
-    accepted_total = 0
+    if a.append:
+        if a.initialization != "input":
+            raise ValueError("--append requires --initialization input from the previous checkpoint")
+        main_path = run / "observables" / "main_per_sweep_measurements.csv"
+        g_path = run / "observables" / "Gk_per_sweep_measurements.csv"
+        acc_path = run / "observables" / "acceptance_history.csv"
+        if not all(path.exists() for path in (main_path, g_path, acc_path)):
+            raise FileNotFoundError("--append requires existing measurement and acceptance histories")
+        main_rows, g_rows, acc_rows = read_csv_rows(main_path), read_csv_rows(g_path), read_csv_rows(acc_path)
+        latest_saved = max(int(row["sweep"]) for row in main_rows)
+        if latest_saved != sweep0:
+            raise ValueError(f"--sweep-offset={sweep0} does not match latest saved sweep {latest_saved}")
+        if any(int(row["sweep"]) > sweep0 for row in acc_rows):
+            raise ValueError("acceptance history extends beyond --sweep-offset")
+        accepted_total = sum(int(row["accepted"]) for row in acc_rows)
+        attempted_total_before = sum(int(row["attempted"]) for row in acc_rows)
+        continuation = run / "continuations"
+        continuation.mkdir(exist_ok=True)
+        write_json(continuation / f"continuation_{sweep0:04d}_to_{sweep0 + a.n_sweeps:04d}.json", config)
+    else:
+        write_json(run / "run_config.json", config)
+        (run / "run_config.yaml").write_text(json.dumps(config, indent=2, default=str) + "\n")
+        main_rows, g_rows = measure_phi(phi, sweep0, source_indices, action=action, batch_size=a.measurement_batch_size)
+        native_rows, _ = measure_phi(native, 0, source_indices, action=action, batch_size=a.measurement_batch_size)
+        write_csv(run / "observables" / f"native_L{L}_reference_summary.csv", aggregate(native_rows))
+        write_measurements(run, main_rows, g_rows)
+        if not a.final_config_only:
+            np.savez_compressed(run / "checkpoints" / f"checkpoint_sweep_{sweep0:04d}.npz", phi=phi)
+        acc_rows = []
+        accepted_total = 0
+        attempted_total_before = 0
     t0 = time.perf_counter()
     for sweep in range(1, a.n_sweeps + 1):
         accepted_this, delta_h_this = 0, []
@@ -243,20 +302,24 @@ def main() -> int:
                 delta_h_this.append(delta_h)
         accepted_total += accepted_this
         all_delta_h = np.concatenate(delta_h_this)
-        attempted_total = sweep * len(sublattices) * a.n_chains
+        attempted_total = attempted_total_before + sweep * len(sublattices) * a.n_chains
         acc_rows.append({"sweep": sweep, "subtrajectories": len(sublattices), "active_sites_per_subtrajectory": int(sublattices[0][1].sum()), "accepted": accepted_this, "attempted": len(sublattices) * a.n_chains, "acceptance": accepted_this / (len(sublattices) * a.n_chains), "acceptance_cumulative": accepted_total / attempted_total, "mean_delta_H": float(all_delta_h.mean()), "std_delta_H": float(all_delta_h.std(ddof=1))})
         absolute_sweep = sweep0 + sweep
         if sweep % a.save_every == 0 or sweep == a.n_sweeps:
-            rows, grows = measure_phi(phi, absolute_sweep, source_indices, batch_size=a.measurement_batch_size)
+            rows, grows = measure_phi(phi, absolute_sweep, source_indices, action=action, batch_size=a.measurement_batch_size)
             main_rows.extend(rows); g_rows.extend(grows)
             write_measurements(run, main_rows, g_rows)
-            np.savez_compressed(run / "checkpoints" / f"checkpoint_sweep_{absolute_sweep:04d}.npz", phi=phi)
-        np.savez_compressed(run / "checkpoints" / "checkpoint_latest.npz", phi=phi)
+            if not a.final_config_only:
+                np.savez_compressed(run / "checkpoints" / f"checkpoint_sweep_{absolute_sweep:04d}.npz", phi=phi)
+        if not a.final_config_only:
+            np.savez_compressed(run / "checkpoints" / "checkpoint_latest.npz", phi=phi)
         write_csv(run / "observables" / "acceptance_history.csv", acc_rows, ACCEPT_COLUMNS)
         print(json.dumps({"sweep": absolute_sweep, "subtrajectories": len(sublattices), "acceptance": accepted_this / (len(sublattices) * a.n_chains), "acceptance_cumulative": accepted_total / attempted_total}), flush=True)
-    summary = {"status": "completed", "runtime_sec": time.perf_counter() - t0, "acceptance": accepted_total / (a.n_sweeps * len(sublattices) * a.n_chains), "fine_action_only_after_initialization": True}
+    final_path = run / "final_phi.npz"
+    np.savez_compressed(final_path, phi=phi, source_indices=source_indices)
+    summary = {"status": "completed", "runtime_sec": time.perf_counter() - t0, "acceptance": accepted_total / (attempted_total_before + a.n_sweeps * len(sublattices) * a.n_chains), "fine_action_only_after_initialization": True, "final_field": str(final_path)}
     write_json(run / "summaries" / "run_summary.json", summary)
-    write_json(run / "status.json", summary | {"current_sweep": a.n_sweeps})
+    write_json(run / "status.json", summary | {"current_sweep": sweep0 + a.n_sweeps})
     return 0
 
 

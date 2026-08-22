@@ -26,7 +26,7 @@ from run_lam1p0_7x7_kernel_search import block, observable_arrays  # noqa: E402
 DIRECT = ROOT / "data/configs_phi4_2d/lam1p0_kappac0p340301_L16/configs.npz"
 FINE = ROOT / "data/configs_phi4_2d/lam1p0_kappac0p340301_L32/configs.npz"
 KERNEL = ROOT / "perfect_blocking/perfect_blocking_lam1p0/kernels/candidates/colleague_paper_objective_5x5_eta_included.json"
-OUT = ROOT / "perfect_blocking/perfect_blocking_lam1p0/tests/colleague5_effective_action_residual"
+OUT = ROOT / "perfect_blocking/perfect_blocking_lam1p0/tests/archive_superseded_kernel_explorations_20260818/colleague5_effective_action_residual"
 
 
 def local_features(phi: np.ndarray) -> dict[str, np.ndarray]:

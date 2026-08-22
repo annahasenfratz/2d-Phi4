@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PYTHON="$ROOT/../.venv/bin/python"
 [[ -x "$PYTHON" ]] || PYTHON="$ROOT/../../.venv/bin/python"
 DRIVER="$ROOT/perfect_blocking/scripts/run_lam1p0_joint_operator_kernel_search.py"
-RUN_DIR="$ROOT/perfect_blocking/perfect_blocking_lam1p0/tests/intermediate/joint_kurtosis_correlations_5000"
+RUN_DIR="$ROOT/perfect_blocking/perfect_blocking_lam1p0/tests/intermediate/archive_superseded_kernel_searches_20260818/joint_kurtosis_correlations_5000"
 CMD=("$PYTHON" -B "$DRIVER")
 EXECUTE=0; BACKGROUND=0
 for arg in "$@"; do case "$arg" in --execute) EXECUTE=1;; --background) BACKGROUND=1;; *) echo "usage: $0 [--execute] [--background]" >&2; exit 2;; esac; done

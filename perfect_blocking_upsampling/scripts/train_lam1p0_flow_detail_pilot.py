@@ -104,7 +104,9 @@ def load_kernel_matrix(path: Path) -> tuple[np.ndarray, dict[str, Any]]:
     else:
         raise ValueError(f"kernel JSON has no matrix field: {path}")
     total = float(mat.sum())
-    if not np.isclose(total, eta_scale, atol=1.0e-10, rtol=0.0):
+    # Nine-decimal tabulated kernels naturally carry O(1e-8) normalization
+    # roundoff; retain a strict absolute check while accepting that precision.
+    if not np.isclose(total, eta_scale, atol=1.0e-8, rtol=0.0):
         raise ValueError(f"kernel sum {total:.17g} != eta_scale {eta_scale:.17g}: {path}")
     return mat, data
 

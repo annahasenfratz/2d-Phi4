@@ -3,7 +3,7 @@
 # Usage: bash $0 [--execute] [--background]
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"; PYTHON="$ROOT/../../.venv/bin/python"
-OUT="${OUT:-$ROOT/perfect_blocking/perfect_blocking_lam1p0/tests/softcond7_blocked_action_relative_entropy}"
+OUT="${OUT:-$ROOT/perfect_blocking/perfect_blocking_lam1p0/tests/archive_superseded_kernel_explorations_20260818/softcond7_blocked_action_relative_entropy}"
 DRIVER="$ROOT/perfect_blocking/scripts/scan_lam1p0_blocked_action_extensions.py"
 BASE_EXTRA="${BASE_EXTRA:-diag_phi2_neighbor,diag_bond_sq,3nn,diag_phi2_bond_sq,diag_phi3phi3}"
 CANDIDATES="${CANDIDATES:-corner211,corner411,corner222,plaquette6,corr_21,corr_22,corr_31}"

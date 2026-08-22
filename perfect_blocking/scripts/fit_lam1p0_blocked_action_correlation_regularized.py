@@ -19,8 +19,8 @@ import torch
 
 ROOT = Path(__file__).resolve().parents[2]
 FIT_SCRIPT = ROOT / "perfect_blocking/scripts/fit_lam1p0_blocked_action_relative_entropy.py"
-SOURCE_DEFAULT = ROOT / "perfect_blocking/perfect_blocking_lam1p0/tests/softcond7_blocked_action_relative_entropy_highfield15"
-OUT_DEFAULT = ROOT / "perfect_blocking/perfect_blocking_lam1p0/tests/softcond7_blocked_action_correlation_regularized"
+SOURCE_DEFAULT = ROOT / "perfect_blocking/perfect_blocking_lam1p0/tests/archive_superseded_kernel_explorations_20260818/softcond7_blocked_action_relative_entropy_highfield15"
+OUT_DEFAULT = ROOT / "perfect_blocking/perfect_blocking_lam1p0/tests/archive_superseded_kernel_explorations_20260818/softcond7_blocked_action_correlation_regularized"
 
 # Selected from the significant held-out residual table, rather than all 105
 # pairs.  Each entry is an explicit, physically interpretable target.
